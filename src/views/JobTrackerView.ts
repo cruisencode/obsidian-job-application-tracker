@@ -5,6 +5,7 @@ import {
 	TFile,
 	debounce,
 	Menu,
+	MarkdownRenderer,
 } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { JobApplication, JobStatus } from "../types";
@@ -691,7 +692,21 @@ export class JobTrackerView extends ItemView {
 			`${completedInterviews} completed rounds`
 		);
 
-		// 2. Section: Pipeline Stage Funnel & Breakdown
+		// 2. Section: Sankey Pipeline Flow Diagram
+		const sankeySection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
+		sankeySection.createEl("h4", { text: "Job Search Sankey Diagram" });
+		const sankeyDesc = sankeySection.createEl("p", {
+			text: "Visual flow of your job hunt from initial sources and applications through interview stages to offers and outcomes.",
+			cls: "text-muted",
+		});
+		sankeyDesc.style.marginTop = "0";
+		sankeyDesc.style.marginBottom = "14px";
+		sankeyDesc.style.fontSize = "0.82em";
+
+		const sankeyContent = sankeySection.createDiv({ cls: "job-tracker-sankey-container" });
+		this.renderSankeyDiagram(sankeyContent);
+
+		// 3. Section: Pipeline Stage Funnel & Breakdown
 		const funnelSection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
 		funnelSection.createEl("h4", { text: "Pipeline Stage Breakdown" });
 
@@ -717,7 +732,7 @@ export class JobTrackerView extends ItemView {
 			progressFill.style.width = `${pct}%`;
 		}
 
-		// 3. Section: Source Performance Analytics
+		// 4. Section: Source Performance Analytics
 		const sourceSection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
 		sourceSection.createEl("h4", { text: "Source Performance & Conversion" });
 
@@ -821,6 +836,100 @@ export class JobTrackerView extends ItemView {
 
 		card.createDiv({ text: value, cls: "job-tracker-kpi-value" });
 		card.createDiv({ text: subtext, cls: "job-tracker-kpi-subtext" });
+	}
+
+	async renderSankeyDiagram(container: HTMLElement) {
+		container.empty();
+
+		if (this.applications.length === 0) {
+			container.createEl("p", {
+				text: "No application data available yet. Add applications to see your Sankey flow diagram.",
+				cls: "text-muted",
+			});
+			return;
+		}
+
+		// Count transitions between nodes
+		const transitionMap = new Map<string, number>();
+
+		const addTransition = (fromNode: string, toNode: string, count = 1) => {
+			if (fromNode === toNode || count <= 0) return;
+			// Sanitize node labels for Mermaid
+			const cleanFrom = fromNode.replace(/[,;"\n\r]+/g, " ").trim();
+			const cleanTo = toNode.replace(/[,;"\n\r]+/g, " ").trim();
+			if (!cleanFrom || !cleanTo || cleanFrom === cleanTo) return;
+
+			const key = `${cleanFrom}|||${cleanTo}`;
+			transitionMap.set(key, (transitionMap.get(key) || 0) + count);
+		};
+
+		// Aggregate flows based on user applications
+		for (const app of this.applications) {
+			const source = app.source ? app.source : "Direct / Other";
+			const status = app.status;
+
+			if (status === "Wishlist") {
+				addTransition(source, "Wishlist", 1);
+			} else if (status === "Applied") {
+				addTransition(source, "Applied", 1);
+			} else if (status === "Screening") {
+				addTransition(source, "Applied", 1);
+				addTransition("Applied", "Screening", 1);
+			} else if (status === "Interviewing") {
+				addTransition(source, "Applied", 1);
+				addTransition("Applied", "Interviewing", 1);
+			} else if (status === "Offer") {
+				addTransition(source, "Applied", 1);
+				addTransition("Applied", "Interviewing", 1);
+				addTransition("Interviewing", "Offer", 1);
+			} else if (status === "Rejected") {
+				addTransition(source, "Applied", 1);
+				if (app.interviews && app.interviews.length > 0) {
+					addTransition("Applied", "Interviewing", 1);
+					addTransition("Interviewing", "Rejected", 1);
+				} else {
+					addTransition("Applied", "Rejected", 1);
+				}
+			} else if (status === "Ghosted") {
+				addTransition(source, "Applied", 1);
+				addTransition("Applied", "Ghosted", 1);
+			} else if (status === "Withdrawn") {
+				addTransition(source, "Applied", 1);
+				if (app.interviews && app.interviews.length > 0) {
+					addTransition("Applied", "Interviewing", 1);
+					addTransition("Interviewing", "Withdrawn", 1);
+				} else {
+					addTransition("Applied", "Withdrawn", 1);
+				}
+			} else {
+				addTransition(source, status, 1);
+			}
+		}
+
+		if (transitionMap.size === 0) {
+			container.createEl("p", {
+				text: "Not enough flow transitions to render diagram.",
+				cls: "text-muted",
+			});
+			return;
+		}
+
+		let mermaidCode = "```mermaid\nsankey-beta\n";
+		for (const [key, count] of transitionMap.entries()) {
+			const [from, to] = key.split("|||");
+			mermaidCode += `"${from}","${to}",${count}\n`;
+		}
+		mermaidCode += "```";
+
+		try {
+			await MarkdownRenderer.render(this.app, mermaidCode, container, "", this);
+		} catch (err) {
+			console.error("Failed to render Mermaid Sankey diagram:", err);
+			container.createEl("p", {
+				text: "Unable to render Sankey diagram.",
+				cls: "text-muted",
+			});
+		}
 	}
 
 	showCardMenu(e: MouseEvent, app: JobApplication) {

@@ -14,6 +14,7 @@ An all-in-one job search management plugin for [Obsidian](https://obsidian.md). 
 - **Table View**: Sortable columns (Company, Role, Status, Applied Date, Location, Salary, Source), clickable status badges, and quick action menus.
 - **List View**: Compact card layout highlighting next scheduled interviews and key details.
 - **Metrics & Conversion Analytics**:
+  - **Sankey Pipeline Diagram**: Native Mermaid-powered Sankey diagram charting the flow from application sources through screening and interview stages to offers and outcomes.
   - Key KPI Cards: Total Applications, Active Pipeline, Response Rate (%), Interview Rate (%), Offer Rate (%), Total Contacts, and Interview Rounds.
   - Pipeline Stage Funnel with visual progress bars.
   - Source Performance breakdown (analyzing which platforms yield the highest interview and offer conversion rates).
