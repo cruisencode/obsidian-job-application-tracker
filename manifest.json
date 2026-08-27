@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "minAppVersion": "0.15.0",
   "description": "Track and manage job applications directly within Obsidian.",
-  "author": "jnuzzi",
-  "authorUrl": "https://github.com/jnuzzi",
+  "author": "cruisencode",
+  "authorUrl": "https://github.com/cruisencode",
   "isDesktopOnly": false
 }
