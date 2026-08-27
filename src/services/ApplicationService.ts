@@ -516,8 +516,9 @@ export class ApplicationService {
 			fm.interviews.push(interview);
 			fm.lastUpdated = today;
 
-			// Optionally bump status to Interviewing if currently Wishlist or Applied or Screening
-			if (autoUpdateStatus && (fm.status === "Wishlist" || fm.status === "Applied" || fm.status === "Screening")) {
+			// Bump status to Interviewing unless already in Interviewing or a later status (e.g. Offer)
+			const laterOrCurrentStatuses: JobStatus[] = ["Interviewing", "Offer"];
+			if (autoUpdateStatus && !laterOrCurrentStatuses.includes(fm.status)) {
 				fm.status = "Interviewing";
 				if (!Array.isArray(fm.statusHistory)) fm.statusHistory = [];
 				fm.statusHistory.push({

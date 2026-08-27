@@ -646,37 +646,90 @@ export class JobTrackerView extends ItemView {
 	/* ========================================================================= */
 	/* METRICS & STATISTICS VIEW                                                 */
 	/* ========================================================================= */
+
+	/**
+	 * Extracts the chronological sequence of statuses that the application entered/exited.
+	 */
+	getVisitedStatuses(app: JobApplication): string[] {
+		const visited: string[] = [];
+
+		// 1. Extract from statusHistory
+		if (app.statusHistory && app.statusHistory.length > 0) {
+			for (const entry of app.statusHistory) {
+				if (entry.status && (visited.length === 0 || visited[visited.length - 1] !== entry.status)) {
+					visited.push(entry.status);
+				}
+			}
+		}
+
+		// 2. Ensure current status is at the end
+		if (app.status && (visited.length === 0 || visited[visited.length - 1] !== app.status)) {
+			visited.push(app.status);
+		}
+
+		// 3. Fallback: If application has interview records but "Interviewing" isn't in history
+		if (app.interviews && app.interviews.length > 0 && !visited.includes("Interviewing")) {
+			const last = visited[visited.length - 1];
+			if (["Offer", "Rejected", "Ghosted", "Withdrawn"].includes(last)) {
+				visited.splice(visited.length - 1, 0, "Interviewing");
+			} else {
+				visited.push("Interviewing");
+			}
+		}
+
+		// 4. Ensure "Applied" is in the chain if application was submitted beyond Wishlist
+		if (visited.length === 0) {
+			visited.push(app.status || "Applied");
+		} else if (visited[0] !== "Wishlist" && !visited.includes("Applied")) {
+			visited.unshift("Applied");
+		}
+
+		return visited;
+	}
+
 	renderMetricsView(container: HTMLElement) {
 		const metricsContainer = container.createDiv({ cls: "job-tracker-metrics-container" });
 
 		const totalApps = this.applications.length;
-		const wishlistApps = this.applications.filter((a) => a.status === "Wishlist");
-		const appliedApps = this.applications.filter((a) => a.status !== "Wishlist");
+		const appHistories = this.applications.map((a) => ({
+			app: a,
+			visited: this.getVisitedStatuses(a),
+		}));
+
+		// Applications that were submitted (entered Applied or any post-application stage)
+		const appliedApps = appHistories.filter(
+			(h) => h.visited.some((st) => st !== "Wishlist") || h.app.status !== "Wishlist"
+		);
+		const wishlistApps = appHistories.filter(
+			(h) => h.app.status === "Wishlist" && !h.visited.some((st) => st !== "Wishlist")
+		);
 		const appliedTotal = appliedApps.length;
 
-		// Active in-progress applications (excluding Wishlist, and terminal states Offer, Rejected, Ghosted, Withdrawn)
+		// Active in-progress applications
 		const activeStatuses: JobStatus[] = ["Applied", "Screening", "Interviewing"];
 		const activeApps = this.applications.filter((a) => activeStatuses.includes(a.status));
 
-		// Applications that reached screening, interview, or offer stage
+		// Applications that reached screening
+		const screeningApps = appliedApps.filter((h) => h.visited.includes("Screening"));
+
+		// Applications that reached interview stage
 		const interviewApps = appliedApps.filter(
-			(a) =>
-				a.status === "Screening" ||
-				a.status === "Interviewing" ||
-				a.status === "Offer" ||
-				(a.interviews && a.interviews.length > 0)
+			(h) =>
+				h.visited.includes("Interviewing") ||
+				h.visited.includes("Offer") ||
+				(h.app.interviews && h.app.interviews.length > 0)
 		);
 
-		const offerApps = appliedApps.filter((a) => a.status === "Offer");
+		// Applications that reached offer stage
+		const offerApps = appliedApps.filter(
+			(h) => h.visited.includes("Offer") || h.app.status === "Offer"
+		);
 
-		// Responses = Screening, Interviewing, Offer, or explicit Rejection from employer
+		// Responses received (progressed to Screening, Interviewing, Offer, or explicit Rejected)
 		const respondedApps = appliedApps.filter(
-			(a) =>
-				a.status === "Screening" ||
-				a.status === "Interviewing" ||
-				a.status === "Offer" ||
-				a.status === "Rejected" ||
-				(a.interviews && a.interviews.length > 0)
+			(h) =>
+				h.visited.some((st) => ["Screening", "Interviewing", "Offer", "Rejected"].includes(st)) ||
+				(h.app.interviews && h.app.interviews.length > 0)
 		);
 
 		const responseRate = appliedTotal > 0 ? ((respondedApps.length / appliedTotal) * 100).toFixed(1) : "0.0";
@@ -696,8 +749,8 @@ export class JobTrackerView extends ItemView {
 		this.renderKpiCard(kpiGrid, "Total Applications", `${totalApps}`, "briefcase", `${appliedTotal} submitted, ${wishlistApps.length} wishlist`);
 		this.renderKpiCard(kpiGrid, "Active Pipeline", `${activeApps.length}`, "activity", "Applied, Screening & Interviewing");
 		this.renderKpiCard(kpiGrid, "Response Rate", `${responseRate}%`, "mail", `${respondedApps.length} of ${appliedTotal} submitted`);
-		this.renderKpiCard(kpiGrid, "Interview Rate", `${interviewRate}%`, "calendar-check", `${interviewApps.length} reached interviews`);
-		this.renderKpiCard(kpiGrid, "Offer Rate", `${offerRate}%`, "award", `${offerApps.length} offers received`);
+		this.renderKpiCard(kpiGrid, "Interview Rate", `${interviewRate}%`, "calendar-check", `${interviewApps.length} of ${appliedTotal} submitted`);
+		this.renderKpiCard(kpiGrid, "Offer Rate", `${offerRate}%`, "award", `${offerApps.length} of ${appliedTotal} submitted`);
 		this.renderKpiCard(kpiGrid, "Total Contacts", `${totalContacts}`, "users", "Recruiters & hiring managers");
 		this.renderKpiCard(
 			kpiGrid,
@@ -711,7 +764,7 @@ export class JobTrackerView extends ItemView {
 		const sankeySection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
 		sankeySection.createEl("h4", { text: "Job Search Sankey Diagram" });
 		const sankeyDesc = sankeySection.createEl("p", {
-			text: "Visual flow of your job hunt from initial sources and submissions through interview stages to final outcomes.",
+			text: "Visual flow of your job hunt based on actual statuses entered/exited, from source to final outcomes.",
 			cls: "text-muted",
 		});
 		sankeyDesc.style.marginTop = "0";
@@ -723,13 +776,14 @@ export class JobTrackerView extends ItemView {
 
 		// 3. Section: Pipeline Stage Funnel & Breakdown
 		const funnelSection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
-		funnelSection.createEl("h4", { text: "Pipeline Stage Breakdown" });
+		funnelSection.createEl("h4", { text: "Pipeline Stage History & Conversion" });
 
 		const funnelBars = funnelSection.createDiv({ cls: "job-tracker-funnel-bars" });
 
 		for (const st of this.plugin.settings.statuses) {
-			const count = this.applications.filter((a) => a.status === st).length;
-			const pct = totalApps > 0 ? ((count / totalApps) * 100).toFixed(1) : "0";
+			const enteredCount = appHistories.filter((h) => h.visited.includes(st) || h.app.status === st).length;
+			const currentCount = this.applications.filter((a) => a.status === st).length;
+			const pct = totalApps > 0 ? ((enteredCount / totalApps) * 100).toFixed(1) : "0";
 
 			const barItem = funnelBars.createDiv({ cls: "job-tracker-funnel-item" });
 
@@ -738,7 +792,10 @@ export class JobTrackerView extends ItemView {
 			leftLabel.createSpan({ text: st, cls: `job-tracker-status-badge status-${st.toLowerCase()}` });
 
 			const rightLabel = labelRow.createDiv({ cls: "job-tracker-funnel-right" });
-			rightLabel.createSpan({ text: `${count} (${pct}%)`, cls: "text-muted" });
+			rightLabel.createSpan({
+				text: `${enteredCount} entered (${currentCount} currently active)`,
+				cls: "text-muted",
+			});
 
 			const progressBg = barItem.createDiv({ cls: "job-tracker-progress-bg" });
 			const progressFill = progressBg.createDiv({
@@ -751,16 +808,15 @@ export class JobTrackerView extends ItemView {
 		const sourceSection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
 		sourceSection.createEl("h4", { text: "Source Performance & Conversion" });
 
-		// Group applications by source
 		const sourceMap = new Map<string, { total: number; interviews: number; offers: number }>();
-		for (const app of this.applications) {
-			const src = app.source || "Unspecified";
+		for (const h of appHistories) {
+			const src = h.app.source || "Unspecified";
 			const entry = sourceMap.get(src) || { total: 0, interviews: 0, offers: 0 };
 			entry.total++;
-			if (["Screening", "Interviewing", "Offer"].includes(app.status) || (app.interviews && app.interviews.length > 0)) {
+			if (h.visited.includes("Interviewing") || (h.app.interviews && h.app.interviews.length > 0)) {
 				entry.interviews++;
 			}
-			if (app.status === "Offer") {
+			if (h.visited.includes("Offer") || h.app.status === "Offer") {
 				entry.offers++;
 			}
 			sourceMap.set(src, entry);
@@ -878,50 +934,51 @@ export class JobTrackerView extends ItemView {
 			transitionMap.set(key, (transitionMap.get(key) || 0) + count);
 		};
 
-		// Track each application through a strict, balanced pipeline path
+		// Track each application along the exact sequence of statuses it entered and exited
 		for (const app of this.applications) {
 			const source = app.source ? app.source : "Direct / Other";
-			const status = app.status;
-			const hasInterviews = app.interviews && app.interviews.length > 0;
+			const visited = this.getVisitedStatuses(app);
 
-			if (status === "Wishlist") {
-				addTransition(source, "Wishlist", 1);
-			} else if (status === "Applied") {
-				addTransition(source, "Applied", 1);
-				addTransition("Applied", "Applied (Pending)", 1);
-			} else if (status === "Screening") {
-				addTransition(source, "Applied", 1);
-				addTransition("Applied", "Screening", 1);
-				addTransition("Screening", "Screening (In Progress)", 1);
-			} else if (status === "Interviewing") {
-				addTransition(source, "Applied", 1);
-				addTransition("Applied", "Interviewing", 1);
-				addTransition("Interviewing", "Interviewing (In Progress)", 1);
-			} else if (status === "Offer") {
-				addTransition(source, "Applied", 1);
-				addTransition("Applied", "Interviewing", 1);
-				addTransition("Interviewing", "Offer", 1);
-			} else if (status === "Rejected") {
-				addTransition(source, "Applied", 1);
-				if (hasInterviews) {
+			if (visited.length === 1) {
+				const only = visited[0];
+				if (only === "Wishlist") {
+					addTransition(source, "Wishlist", 1);
+				} else if (only === "Applied") {
+					addTransition(source, "Applied", 1);
+					addTransition("Applied", "Applied (Pending)", 1);
+				} else if (only === "Screening") {
+					addTransition(source, "Applied", 1);
+					addTransition("Applied", "Screening", 1);
+					addTransition("Screening", "Screening (In Progress)", 1);
+				} else if (only === "Interviewing") {
+					addTransition(source, "Applied", 1);
 					addTransition("Applied", "Interviewing", 1);
-					addTransition("Interviewing", "Rejected After Interview", 1);
+					addTransition("Interviewing", "Interviewing (In Progress)", 1);
 				} else {
-					addTransition("Applied", "Rejected (No Interview)", 1);
-				}
-			} else if (status === "Ghosted") {
-				addTransition(source, "Applied", 1);
-				addTransition("Applied", "Ghosted", 1);
-			} else if (status === "Withdrawn") {
-				addTransition(source, "Applied", 1);
-				if (hasInterviews) {
-					addTransition("Applied", "Interviewing", 1);
-					addTransition("Interviewing", "Withdrawn", 1);
-				} else {
-					addTransition("Applied", "Withdrawn", 1);
+					addTransition(source, "Applied", 1);
+					addTransition("Applied", only, 1);
 				}
 			} else {
-				addTransition(source, status, 1);
+				// Connect Source to first stage
+				const firstStage = visited[0];
+				addTransition(source, firstStage, 1);
+
+				// Connect intermediate stage transitions
+				for (let i = 0; i < visited.length - 1; i++) {
+					const fromStage = visited[i];
+					const toStage = visited[i + 1];
+					addTransition(fromStage, toStage, 1);
+				}
+
+				// If terminal status is an active intermediate state, provide terminal sink
+				const terminal = visited[visited.length - 1];
+				if (terminal === "Applied") {
+					addTransition("Applied", "Applied (Pending)", 1);
+				} else if (terminal === "Screening") {
+					addTransition("Screening", "Screening (In Progress)", 1);
+				} else if (terminal === "Interviewing") {
+					addTransition("Interviewing", "Interviewing (In Progress)", 1);
+				}
 			}
 		}
 
