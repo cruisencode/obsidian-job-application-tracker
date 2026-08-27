@@ -636,6 +636,212 @@
 	background-color: var(--background-modifier-hover);
 }
 
+/* ========================================================================= */
+/* METRICS & STATISTICS DASHBOARD                                           */
+/* ========================================================================= */
+
+.job-tracker-metrics-container {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding-bottom: 20px;
+}
+
+.job-tracker-kpi-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+	gap: 10px;
+}
+
+.job-tracker-kpi-card {
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	padding: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.job-tracker-kpi-card:hover {
+	border-color: var(--interactive-accent);
+}
+
+.job-tracker-kpi-top {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	color: var(--text-muted);
+}
+
+.job-tracker-kpi-label {
+	font-size: 0.78em;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.job-tracker-kpi-icon {
+	color: var(--text-accent);
+	display: flex;
+	align-items: center;
+}
+
+.job-tracker-kpi-value {
+	font-size: 1.6em;
+	font-weight: 700;
+	color: var(--text-normal);
+	margin-top: 2px;
+}
+
+.job-tracker-kpi-subtext {
+	font-size: 0.75em;
+	color: var(--text-muted);
+}
+
+.job-tracker-metrics-section {
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	padding: 16px;
+}
+
+.job-tracker-metrics-section h4 {
+	margin-top: 0;
+	margin-bottom: 14px;
+	font-size: 0.95em;
+	color: var(--text-normal);
+	font-weight: 600;
+}
+
+/* Funnel Progress Bars */
+.job-tracker-funnel-bars {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.job-tracker-funnel-item {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.job-tracker-funnel-label-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 0.82em;
+}
+
+.job-tracker-progress-bg {
+	width: 100%;
+	height: 8px;
+	background-color: var(--background-primary);
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.job-tracker-progress-fill {
+	height: 100%;
+	border-radius: 4px;
+	transition: width 0.3s ease;
+}
+
+.job-tracker-progress-fill.status-wishlist { background-color: #718096; }
+.job-tracker-progress-fill.status-applied { background-color: #3182ce; }
+.job-tracker-progress-fill.status-screening { background-color: #805ad5; }
+.job-tracker-progress-fill.status-interviewing { background-color: #dd6b20; }
+.job-tracker-progress-fill.status-offer { background-color: #38a169; }
+.job-tracker-progress-fill.status-rejected { background-color: #e53e3e; }
+.job-tracker-progress-fill.status-withdrawn { background-color: #a0aec0; }
+.job-tracker-progress-fill.status-ghosted { background-color: #4a5568; }
+
+/* Source Table */
+.source-table th {
+	font-size: 0.8em;
+}
+
+.source-table td {
+	font-size: 0.82em;
+}
+
+/* Activity Feed */
+.job-tracker-activity-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.job-tracker-activity-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	font-size: 0.82em;
+	padding-bottom: 8px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.job-tracker-activity-item:last-child {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.activity-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	margin-top: 5px;
+	flex-shrink: 0;
+}
+
+.activity-dot.status-wishlist { background-color: #718096; }
+.activity-dot.status-applied { background-color: #3182ce; }
+.activity-dot.status-screening { background-color: #805ad5; }
+.activity-dot.status-interviewing { background-color: #dd6b20; }
+.activity-dot.status-offer { background-color: #38a169; }
+.activity-dot.status-rejected { background-color: #e53e3e; }
+.activity-dot.status-withdrawn { background-color: #a0aec0; }
+.activity-dot.status-ghosted { background-color: #4a5568; }
+
+.activity-text {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	flex: 1;
+}
+
+.activity-title-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.activity-comp-link {
+	font-weight: 600;
+	color: var(--text-accent);
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.activity-comp-link:hover {
+	text-decoration: underline;
+}
+
+.activity-date {
+	margin-left: auto;
+	color: var(--text-muted);
+	font-size: 0.85em;
+}
+
+.activity-note {
+	color: var(--text-muted);
+	font-style: italic;
+	font-size: 0.9em;
+}
+
 /* Modals & Template Settings */
 .job-tracker-modal {
 	padding: 8px 12px;

@@ -14,7 +14,7 @@ import { UpdateStatusModal } from "../modals/UpdateStatusModal";
 import { AddContactModal } from "../modals/AddContactModal";
 import { AddInterviewModal } from "../modals/AddInterviewModal";
 
-export type TrackerViewMode = "kanban" | "table" | "list";
+export type TrackerViewMode = "kanban" | "table" | "list" | "metrics";
 
 export class JobTrackerView extends ItemView {
 	plugin: JobApplicationTrackerPlugin;
@@ -88,8 +88,10 @@ export class JobTrackerView extends ItemView {
 			this.renderKanbanView(contentContainer, filteredApps);
 		} else if (this.currentMode === "table") {
 			this.renderTableView(contentContainer, filteredApps);
-		} else {
+		} else if (this.currentMode === "list") {
 			this.renderListView(contentContainer, filteredApps);
+		} else {
+			this.renderMetricsView(contentContainer);
 		}
 	}
 
@@ -142,6 +144,16 @@ export class JobTrackerView extends ItemView {
 			this.render();
 		};
 
+		const metricsBtn = viewSwitcher.createEl("button", {
+			cls: `job-tracker-mode-btn ${this.currentMode === "metrics" ? "is-active" : ""}`,
+			attr: { "aria-label": "Metrics & Statistics" },
+		});
+		setIcon(metricsBtn, "bar-chart-3");
+		metricsBtn.onclick = () => {
+			this.currentMode = "metrics";
+			this.render();
+		};
+
 		// Refresh button
 		const refreshBtn = headerActions.createEl("button", {
 			cls: "job-tracker-icon-btn",
@@ -159,44 +171,46 @@ export class JobTrackerView extends ItemView {
 			new NewApplicationModal(this.app, this.plugin).open();
 		};
 
-		// Filter & Search bar row
-		const filterRow = header.createDiv({ cls: "job-tracker-filter-row" });
+		// Filter & Search bar row (only for non-metrics view)
+		if (this.currentMode !== "metrics") {
+			const filterRow = header.createDiv({ cls: "job-tracker-filter-row" });
 
-		// Search input
-		const searchWrapper = filterRow.createDiv({ cls: "job-tracker-search-wrapper" });
-		const searchIcon = searchWrapper.createSpan({ cls: "job-tracker-search-icon" });
-		setIcon(searchIcon, "search");
-		const searchInput = searchWrapper.createEl("input", {
-			type: "text",
-			placeholder: "Search company, role, location...",
-			cls: "job-tracker-search-input",
-			value: this.searchQuery,
-		});
-		searchInput.oninput = (e) => {
-			this.searchQuery = (e.target as HTMLInputElement).value;
-			this.renderContentOnly();
-		};
+			// Search input
+			const searchWrapper = filterRow.createDiv({ cls: "job-tracker-search-wrapper" });
+			const searchIcon = searchWrapper.createSpan({ cls: "job-tracker-search-icon" });
+			setIcon(searchIcon, "search");
+			const searchInput = searchWrapper.createEl("input", {
+				type: "text",
+				placeholder: "Search company, role, location...",
+				cls: "job-tracker-search-input",
+				value: this.searchQuery,
+			});
+			searchInput.oninput = (e) => {
+				this.searchQuery = (e.target as HTMLInputElement).value;
+				this.renderContentOnly();
+			};
 
-		if (this.searchQuery) {
-			const clearBtn = searchWrapper.createSpan({ cls: "job-tracker-search-clear" });
-			setIcon(clearBtn, "x");
-			clearBtn.onclick = () => {
-				this.searchQuery = "";
-				this.render();
+			if (this.searchQuery) {
+				const clearBtn = searchWrapper.createSpan({ cls: "job-tracker-search-clear" });
+				setIcon(clearBtn, "x");
+				clearBtn.onclick = () => {
+					this.searchQuery = "";
+					this.render();
+				};
+			}
+
+			// Status filter dropdown
+			const statusSelect = filterRow.createEl("select", { cls: "job-tracker-filter-select" });
+			statusSelect.createEl("option", { text: "All Statuses", value: "All" });
+			for (const st of this.plugin.settings.statuses) {
+				const opt = statusSelect.createEl("option", { text: st, value: st });
+				if (st === this.statusFilter) opt.selected = true;
+			}
+			statusSelect.onchange = (e) => {
+				this.statusFilter = (e.target as HTMLSelectElement).value;
+				this.renderContentOnly();
 			};
 		}
-
-		// Status filter dropdown
-		const statusSelect = filterRow.createEl("select", { cls: "job-tracker-filter-select" });
-		statusSelect.createEl("option", { text: "All Statuses", value: "All" });
-		for (const st of this.plugin.settings.statuses) {
-			const opt = statusSelect.createEl("option", { text: st, value: st });
-			if (st === this.statusFilter) opt.selected = true;
-		}
-		statusSelect.onchange = (e) => {
-			this.statusFilter = (e.target as HTMLSelectElement).value;
-			this.renderContentOnly();
-		};
 	}
 
 	renderContentOnly() {
@@ -212,8 +226,10 @@ export class JobTrackerView extends ItemView {
 				this.renderKanbanView(contentArea, filteredApps);
 			} else if (this.currentMode === "table") {
 				this.renderTableView(contentArea, filteredApps);
-			} else {
+			} else if (this.currentMode === "list") {
 				this.renderListView(contentArea, filteredApps);
+			} else {
+				this.renderMetricsView(contentArea);
 			}
 		}
 	}
@@ -602,6 +618,187 @@ export class JobTrackerView extends ItemView {
 		}
 	}
 
+	/* ========================================================================= */
+	/* METRICS & STATISTICS VIEW                                                 */
+	/* ========================================================================= */
+	renderMetricsView(container: HTMLElement) {
+		const metricsContainer = container.createDiv({ cls: "job-tracker-metrics-container" });
+
+		const totalApps = this.applications.length;
+		const activeStatuses: JobStatus[] = ["Wishlist", "Applied", "Screening", "Interviewing"];
+		const activeApps = this.applications.filter((a) => activeStatuses.includes(a.status));
+		const interviewApps = this.applications.filter(
+			(a) => ["Screening", "Interviewing", "Offer"].includes(a.status) || a.interviews.length > 0
+		);
+		const offerApps = this.applications.filter((a) => a.status === "Offer");
+		const rejectedApps = this.applications.filter((a) => a.status === "Rejected");
+		const ghostedApps = this.applications.filter((a) => a.status === "Ghosted");
+
+		const appliedTotal = this.applications.filter((a) => a.status !== "Wishlist").length;
+		const respondedTotal = this.applications.filter(
+			(a) => a.status !== "Applied" && a.status !== "Wishlist" && a.status !== "Ghosted"
+		).length;
+
+		const responseRate = appliedTotal > 0 ? ((respondedTotal / appliedTotal) * 100).toFixed(1) : "0.0";
+		const interviewRate = appliedTotal > 0 ? ((interviewApps.length / appliedTotal) * 100).toFixed(1) : "0.0";
+		const offerRate = appliedTotal > 0 ? ((offerApps.length / appliedTotal) * 100).toFixed(1) : "0.0";
+
+		const totalContacts = this.applications.reduce((acc, a) => acc + (a.contacts?.length || 0), 0);
+		const totalInterviews = this.applications.reduce((acc, a) => acc + (a.interviews?.length || 0), 0);
+		const completedInterviews = this.applications.reduce(
+			(acc, a) => acc + (a.interviews?.filter((i) => i.status === "Completed").length || 0),
+			0
+		);
+
+		// 1. KPI Cards Grid
+		const kpiGrid = metricsContainer.createDiv({ cls: "job-tracker-kpi-grid" });
+
+		this.renderKpiCard(kpiGrid, "Total Applications", `${totalApps}`, "briefcase", "All tracked job notes");
+		this.renderKpiCard(kpiGrid, "Active Pipeline", `${activeApps.length}`, "activity", "In progress applications");
+		this.renderKpiCard(kpiGrid, "Response Rate", `${responseRate}%`, "mail", "Applications with a response");
+		this.renderKpiCard(kpiGrid, "Interview Rate", `${interviewRate}%`, "calendar-check", "Advancement to screens/interviews");
+		this.renderKpiCard(kpiGrid, "Offer Rate", `${offerRate}%`, "award", "Offers received");
+		this.renderKpiCard(kpiGrid, "Total Contacts", `${totalContacts}`, "users", "Recruiters & managers");
+		this.renderKpiCard(
+			kpiGrid,
+			"Interviews",
+			`${totalInterviews}`,
+			"clock",
+			`${completedInterviews} completed rounds`
+		);
+
+		// 2. Section: Pipeline Stage Funnel & Breakdown
+		const funnelSection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
+		funnelSection.createEl("h4", { text: "Pipeline Stage Breakdown" });
+
+		const funnelBars = funnelSection.createDiv({ cls: "job-tracker-funnel-bars" });
+
+		for (const st of this.plugin.settings.statuses) {
+			const count = this.applications.filter((a) => a.status === st).length;
+			const pct = totalApps > 0 ? ((count / totalApps) * 100).toFixed(1) : "0";
+
+			const barItem = funnelBars.createDiv({ cls: "job-tracker-funnel-item" });
+
+			const labelRow = barItem.createDiv({ cls: "job-tracker-funnel-label-row" });
+			const leftLabel = labelRow.createDiv({ cls: "job-tracker-funnel-left" });
+			leftLabel.createSpan({ text: st, cls: `job-tracker-status-badge status-${st.toLowerCase()}` });
+
+			const rightLabel = labelRow.createDiv({ cls: "job-tracker-funnel-right" });
+			rightLabel.createSpan({ text: `${count} (${pct}%)`, cls: "text-muted" });
+
+			const progressBg = barItem.createDiv({ cls: "job-tracker-progress-bg" });
+			const progressFill = progressBg.createDiv({
+				cls: `job-tracker-progress-fill status-${st.toLowerCase()}`,
+			});
+			progressFill.style.width = `${pct}%`;
+		}
+
+		// 3. Section: Source Performance Analytics
+		const sourceSection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
+		sourceSection.createEl("h4", { text: "Source Performance & Conversion" });
+
+		// Group applications by source
+		const sourceMap = new Map<string, { total: number; interviews: number; offers: number }>();
+		for (const app of this.applications) {
+			const src = app.source || "Unspecified";
+			const entry = sourceMap.get(src) || { total: 0, interviews: 0, offers: 0 };
+			entry.total++;
+			if (["Screening", "Interviewing", "Offer"].includes(app.status) || app.interviews.length > 0) {
+				entry.interviews++;
+			}
+			if (app.status === "Offer") {
+				entry.offers++;
+			}
+			sourceMap.set(src, entry);
+		}
+
+		if (sourceMap.size === 0) {
+			sourceSection.createEl("p", {
+				text: "No source data available yet.",
+				cls: "text-muted",
+			});
+		} else {
+			const sourceTable = sourceSection.createEl("table", { cls: "job-tracker-table source-table" });
+			const stHead = sourceTable.createEl("thead");
+			const stHeadRow = stHead.createEl("tr");
+			stHeadRow.createEl("th", { text: "Source" });
+			stHeadRow.createEl("th", { text: "Applications" });
+			stHeadRow.createEl("th", { text: "Interviews Landed" });
+			stHeadRow.createEl("th", { text: "Offers Landed" });
+			stHeadRow.createEl("th", { text: "Interview %" });
+
+			const stBody = sourceTable.createEl("tbody");
+			for (const [sourceName, stats] of sourceMap.entries()) {
+				const tr = stBody.createEl("tr");
+				tr.createEl("td", { text: sourceName, cls: "font-semibold" });
+				tr.createEl("td", { text: `${stats.total}` });
+				tr.createEl("td", { text: `${stats.interviews}` });
+				tr.createEl("td", { text: `${stats.offers}` });
+				const srcIvRate = stats.total > 0 ? ((stats.interviews / stats.total) * 100).toFixed(0) : "0";
+				tr.createEl("td", { text: `${srcIvRate}%` });
+			}
+		}
+
+		// 4. Section: Recent Activity Timeline
+		const activitySection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
+		activitySection.createEl("h4", { text: "Recent Application Activity" });
+
+		const allHistoryEntries: { company: string; role: string; filePath: string; date: string; status: string; note?: string }[] = [];
+		for (const app of this.applications) {
+			for (const h of app.statusHistory || []) {
+				allHistoryEntries.push({
+					company: app.company,
+					role: app.role,
+					filePath: app.filePath,
+					date: h.date,
+					status: h.status,
+					note: h.note,
+				});
+			}
+		}
+
+		allHistoryEntries.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+		if (allHistoryEntries.length === 0) {
+			activitySection.createEl("p", {
+				text: "No recent status activity recorded yet.",
+				cls: "text-muted",
+			});
+		} else {
+			const activityList = activitySection.createDiv({ cls: "job-tracker-activity-list" });
+			for (const entry of allHistoryEntries.slice(0, 10)) {
+				const item = activityList.createDiv({ cls: "job-tracker-activity-item" });
+				const dot = item.createSpan({ cls: `activity-dot status-${entry.status.toLowerCase()}` });
+
+				const textContainer = item.createDiv({ cls: "activity-text" });
+				const titleRow = textContainer.createDiv({ cls: "activity-title-row" });
+				const compLink = titleRow.createEl("a", { text: entry.company, cls: "activity-comp-link" });
+				compLink.onclick = () => this.openNote(entry.filePath);
+				titleRow.createSpan({ text: `(${entry.role})` });
+				titleRow.createSpan({
+					text: entry.status,
+					cls: `job-tracker-status-badge status-${entry.status.toLowerCase()}`,
+				});
+				titleRow.createSpan({ text: entry.date, cls: "activity-date" });
+
+				if (entry.note) {
+					textContainer.createDiv({ text: entry.note, cls: "activity-note" });
+				}
+			}
+		}
+	}
+
+	renderKpiCard(container: HTMLElement, label: string, value: string, icon: string, subtext: string) {
+		const card = container.createDiv({ cls: "job-tracker-kpi-card" });
+		const top = card.createDiv({ cls: "job-tracker-kpi-top" });
+		top.createSpan({ text: label, cls: "job-tracker-kpi-label" });
+		const iconEl = top.createSpan({ cls: "job-tracker-kpi-icon" });
+		setIcon(iconEl, icon);
+
+		card.createDiv({ text: value, cls: "job-tracker-kpi-value" });
+		card.createDiv({ text: subtext, cls: "job-tracker-kpi-subtext" });
+	}
+
 	showCardMenu(e: MouseEvent, app: JobApplication) {
 		const menu = new Menu();
 
@@ -653,3 +850,4 @@ export class JobTrackerView extends ItemView {
 		}
 	}
 }
+
