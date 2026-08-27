@@ -1,5 +1,7 @@
 import { JobApplicationTrackerSettings, JobStatus } from "./types";
 
+export const VIEW_TYPE_JOB_TRACKER = "job-application-tracker-view";
+
 export const DEFAULT_STATUSES: JobStatus[] = [
 	"Wishlist",
 	"Applied",

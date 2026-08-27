@@ -1,6 +1,6 @@
-import { MarkdownView, Plugin, TFile } from "obsidian";
+import { MarkdownView, Plugin, TFile, WorkspaceLeaf } from "obsidian";
 import { JobApplicationTrackerSettings, JobApplication } from "./types";
-import { DEFAULT_SETTINGS } from "./constants";
+import { DEFAULT_SETTINGS, VIEW_TYPE_JOB_TRACKER } from "./constants";
 import { ApplicationService } from "./services/ApplicationService";
 import { JobApplicationTrackerSettingTab } from "./settings/SettingsTab";
 import { NewApplicationModal } from "./modals/NewApplicationModal";
@@ -8,6 +8,7 @@ import { UpdateStatusModal } from "./modals/UpdateStatusModal";
 import { AddContactModal } from "./modals/AddContactModal";
 import { AddInterviewModal } from "./modals/AddInterviewModal";
 import { LogInterviewOutcomeModal } from "./modals/LogInterviewOutcomeModal";
+import { JobTrackerView } from "./views/JobTrackerView";
 
 export default class JobApplicationTrackerPlugin extends Plugin {
 	settings: JobApplicationTrackerSettings;
@@ -18,9 +19,24 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 
 		this.appService = new ApplicationService(this.app, this);
 
-		// Ribbon icon
-		this.addRibbonIcon("briefcase", "Job Application Tracker: New Application", () => {
-			new NewApplicationModal(this.app, this).open();
+		// Register custom Job Tracker View
+		this.registerView(
+			VIEW_TYPE_JOB_TRACKER,
+			(leaf) => new JobTrackerView(leaf, this)
+		);
+
+		// Ribbon icon: Opens the Job Application Tracker dashboard
+		this.addRibbonIcon("briefcase", "Job Application Tracker", () => {
+			this.activateView();
+		});
+
+		// Command: Open Job Application Tracker view
+		this.addCommand({
+			id: "open-job-tracker-view",
+			name: "Open tracker dashboard (Kanban / Table / List)",
+			callback: () => {
+				this.activateView();
+			},
 		});
 
 		// Command: Add new job application
@@ -74,6 +90,27 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 
 		// Settings tab
 		this.addSettingTab(new JobApplicationTrackerSettingTab(this.app, this));
+	}
+
+	async activateView() {
+		const { workspace } = this.app;
+
+		let leaf: WorkspaceLeaf | null = null;
+		const leaves = workspace.getLeavesOfType(VIEW_TYPE_JOB_TRACKER);
+
+		if (leaves.length > 0) {
+			leaf = leaves[0];
+		} else {
+			// Prefer right sidebar leaf, or main workspace leaf if preferred
+			leaf = workspace.getRightLeaf(false) || workspace.getLeaf(false);
+			if (leaf) {
+				await leaf.setViewState({ type: VIEW_TYPE_JOB_TRACKER, active: true });
+			}
+		}
+
+		if (leaf) {
+			workspace.revealLeaf(leaf);
+		}
 	}
 
 	/**

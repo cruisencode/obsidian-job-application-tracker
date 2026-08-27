@@ -1,5 +1,642 @@
-/* Job Application Tracker styles */
+/* ========================================================================= */
+/* Obsidian Job Application Tracker Styles                                  */
+/* ========================================================================= */
 
+.job-tracker-view {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	padding: 12px;
+	overflow: hidden;
+	background-color: var(--background-primary);
+}
+
+/* Header */
+.job-tracker-header {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	flex-shrink: 0;
+}
+
+.job-tracker-header-top {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.job-tracker-title-container {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.job-tracker-title {
+	margin: 0;
+	font-size: 1.15em;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.job-tracker-count-badge {
+	font-size: 0.75em;
+	padding: 2px 8px;
+	border-radius: 12px;
+	background-color: var(--background-secondary-alt);
+	color: var(--text-muted);
+}
+
+.job-tracker-header-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.job-tracker-view-switcher {
+	display: flex;
+	background-color: var(--background-secondary);
+	border-radius: 6px;
+	padding: 2px;
+	border: 1px solid var(--background-modifier-border);
+}
+
+.job-tracker-mode-btn {
+	background: transparent;
+	border: none;
+	padding: 4px 8px;
+	cursor: pointer;
+	border-radius: 4px;
+	color: var(--text-muted);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.job-tracker-mode-btn:hover {
+	color: var(--text-normal);
+}
+
+.job-tracker-mode-btn.is-active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.job-tracker-icon-btn {
+	background: transparent;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 4px 8px;
+	cursor: pointer;
+	color: var(--text-muted);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.job-tracker-icon-btn:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.job-tracker-add-btn {
+	padding: 5px 12px;
+	font-size: 0.85em;
+	border-radius: 6px;
+}
+
+/* Filter Row */
+.job-tracker-filter-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.job-tracker-search-wrapper {
+	position: relative;
+	display: flex;
+	align-items: center;
+	flex: 1;
+}
+
+.job-tracker-search-icon {
+	position: absolute;
+	left: 8px;
+	display: flex;
+	align-items: center;
+	color: var(--text-muted);
+	pointer-events: none;
+}
+
+.job-tracker-search-input {
+	width: 100%;
+	padding-left: 28px !important;
+	padding-right: 28px !important;
+	font-size: 0.85em;
+	height: 32px;
+	border-radius: 6px;
+}
+
+.job-tracker-search-clear {
+	position: absolute;
+	right: 8px;
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+	color: var(--text-muted);
+}
+
+.job-tracker-search-clear:hover {
+	color: var(--text-normal);
+}
+
+.job-tracker-filter-select {
+	height: 32px;
+	font-size: 0.85em;
+	border-radius: 6px;
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	color: var(--text-normal);
+	padding: 0 8px;
+}
+
+/* Content Area */
+.job-tracker-content-area {
+	flex: 1;
+	overflow: auto;
+	margin-top: 10px;
+}
+
+/* Empty State */
+.job-tracker-empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	min-height: 250px;
+	text-align: center;
+	color: var(--text-muted);
+	gap: 10px;
+}
+
+.job-tracker-empty-icon {
+	font-size: 2.5em;
+	color: var(--text-faint);
+}
+
+/* ========================================================================= */
+/* Status Badges & Colors                                                    */
+/* ========================================================================= */
+
+.job-tracker-status-badge {
+	display: inline-flex;
+	align-items: center;
+	font-size: 0.75em;
+	font-weight: 500;
+	padding: 2px 8px;
+	border-radius: 12px;
+	cursor: pointer;
+	text-transform: capitalize;
+	white-space: nowrap;
+	border: 1px solid transparent;
+}
+
+.status-wishlist,
+.job-tracker-status-badge.status-wishlist {
+	background-color: rgba(138, 143, 152, 0.15);
+	color: var(--text-muted);
+	border-color: rgba(138, 143, 152, 0.3);
+}
+
+.status-applied,
+.job-tracker-status-badge.status-applied {
+	background-color: rgba(66, 153, 225, 0.15);
+	color: #3182ce;
+	border-color: rgba(66, 153, 225, 0.3);
+}
+
+.status-screening,
+.job-tracker-status-badge.status-screening {
+	background-color: rgba(159, 122, 234, 0.15);
+	color: #805ad5;
+	border-color: rgba(159, 122, 234, 0.3);
+}
+
+.status-interviewing,
+.job-tracker-status-badge.status-interviewing {
+	background-color: rgba(236, 157, 50, 0.15);
+	color: #dd6b20;
+	border-color: rgba(236, 157, 50, 0.3);
+}
+
+.status-offer,
+.job-tracker-status-badge.status-offer {
+	background-color: rgba(72, 187, 120, 0.15);
+	color: #38a169;
+	border-color: rgba(72, 187, 120, 0.3);
+}
+
+.status-rejected,
+.job-tracker-status-badge.status-rejected {
+	background-color: rgba(245, 101, 101, 0.15);
+	color: #e53e3e;
+	border-color: rgba(245, 101, 101, 0.3);
+}
+
+.status-withdrawn,
+.job-tracker-status-badge.status-withdrawn {
+	background-color: rgba(160, 174, 192, 0.15);
+	color: #718096;
+	border-color: rgba(160, 174, 192, 0.3);
+}
+
+.status-ghosted,
+.job-tracker-status-badge.status-ghosted {
+	background-color: rgba(113, 128, 150, 0.15);
+	color: #4a5568;
+	border-color: rgba(113, 128, 150, 0.3);
+}
+
+/* ========================================================================= */
+/* KANBAN BOARD                                                              */
+/* ========================================================================= */
+
+.job-tracker-kanban-board {
+	display: flex;
+	gap: 12px;
+	height: 100%;
+	overflow-x: auto;
+	padding-bottom: 8px;
+}
+
+.job-tracker-kanban-column {
+	display: flex;
+	flex-direction: column;
+	min-width: 250px;
+	max-width: 320px;
+	flex: 1;
+	background-color: var(--background-secondary);
+	border-radius: 8px;
+	padding: 8px;
+	border: 1px solid var(--background-modifier-border);
+	transition: background-color 0.15s ease;
+}
+
+.job-tracker-kanban-column.drag-over {
+	background-color: var(--background-modifier-hover);
+	border-style: dashed;
+	border-color: var(--interactive-accent);
+}
+
+.job-tracker-kanban-col-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 8px;
+	padding-bottom: 6px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.job-tracker-kanban-col-title {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.job-tracker-status-pill {
+	font-size: 0.8em;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.job-tracker-col-count {
+	font-size: 0.75em;
+	color: var(--text-muted);
+	background: var(--background-primary);
+	border-radius: 10px;
+	padding: 1px 6px;
+}
+
+.job-tracker-col-add-btn {
+	background: transparent;
+	border: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 2px;
+	display: flex;
+	align-items: center;
+	border-radius: 4px;
+}
+
+.job-tracker-col-add-btn:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+.job-tracker-kanban-cards {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	flex: 1;
+	overflow-y: auto;
+	min-height: 80px;
+}
+
+.job-tracker-kanban-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	color: var(--text-faint);
+	font-size: 0.8em;
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 16px;
+}
+
+.job-tracker-kanban-card {
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 10px;
+	cursor: grab;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.job-tracker-kanban-card:hover {
+	box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+	border-color: var(--interactive-accent);
+}
+
+.job-tracker-kanban-card.is-dragging {
+	opacity: 0.5;
+	transform: scale(0.98);
+}
+
+.job-tracker-card-top {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.job-tracker-card-company {
+	font-weight: 600;
+	font-size: 0.9em;
+	color: var(--text-accent);
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.job-tracker-card-company:hover {
+	text-decoration: underline;
+}
+
+.job-tracker-card-menu-btn {
+	cursor: pointer;
+	color: var(--text-muted);
+	display: flex;
+	align-items: center;
+}
+
+.job-tracker-card-menu-btn:hover {
+	color: var(--text-normal);
+}
+
+.job-tracker-card-role {
+	font-size: 0.85em;
+	color: var(--text-normal);
+	margin-top: 3px;
+	margin-bottom: 6px;
+	cursor: pointer;
+}
+
+.job-tracker-card-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-bottom: 8px;
+}
+
+.job-tracker-badge {
+	font-size: 0.72em;
+	padding: 2px 6px;
+	background-color: var(--background-secondary);
+	border-radius: 4px;
+	color: var(--text-muted);
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+}
+
+.job-tracker-card-meta {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	font-size: 0.75em;
+	color: var(--text-muted);
+	margin-top: 6px;
+	padding-top: 6px;
+	border-top: 1px solid var(--background-modifier-border-focus);
+}
+
+.job-tracker-meta-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.job-tracker-date-meta {
+	margin-left: auto;
+}
+
+/* ========================================================================= */
+/* TABLE VIEW                                                                */
+/* ========================================================================= */
+
+.job-tracker-table-wrapper {
+	width: 100%;
+	overflow-x: auto;
+}
+
+.job-tracker-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.85em;
+}
+
+.job-tracker-table th,
+.job-tracker-table td {
+	padding: 8px 10px;
+	text-align: left;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.job-tracker-table th {
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	font-weight: 600;
+	position: sticky;
+	top: 0;
+	z-index: 1;
+}
+
+.sortable-th {
+	cursor: pointer;
+	user-select: none;
+}
+
+.sortable-th:hover {
+	color: var(--text-normal);
+}
+
+.sort-indicator {
+	margin-left: 4px;
+	display: inline-flex;
+	align-items: center;
+}
+
+.job-tracker-table tr:hover td {
+	background-color: var(--background-modifier-hover);
+}
+
+.td-company .company-link {
+	font-weight: 600;
+	color: var(--text-accent);
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.td-company .company-link:hover {
+	text-decoration: underline;
+}
+
+.td-actions {
+	text-align: right;
+}
+
+.job-tracker-action-btn {
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	color: var(--text-muted);
+	padding: 4px;
+	border-radius: 4px;
+}
+
+.job-tracker-action-btn:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+.table-interviews-badge {
+	font-size: 0.85em;
+	padding: 2px 6px;
+	border-radius: 4px;
+	background: var(--background-secondary);
+}
+
+/* ========================================================================= */
+/* LIST VIEW                                                                 */
+/* ========================================================================= */
+
+.job-tracker-list-container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.job-tracker-list-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px;
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	transition: border-color 0.15s ease;
+}
+
+.job-tracker-list-item:hover {
+	border-color: var(--interactive-accent);
+}
+
+.job-tracker-list-main {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	flex: 1;
+}
+
+.job-tracker-list-title-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.job-tracker-list-company {
+	font-size: 1em;
+	font-weight: 600;
+	color: var(--text-accent);
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.job-tracker-list-company:hover {
+	text-decoration: underline;
+}
+
+.job-tracker-list-role {
+	font-size: 0.9em;
+	color: var(--text-normal);
+}
+
+.divider {
+	color: var(--text-muted);
+}
+
+.job-tracker-list-details {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	font-size: 0.78em;
+	color: var(--text-muted);
+	flex-wrap: wrap;
+}
+
+.job-tracker-list-highlight {
+	color: var(--text-accent);
+	font-weight: 500;
+}
+
+.job-tracker-list-actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.job-tracker-action-pill-btn {
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 12px;
+	font-size: 0.75em;
+	padding: 3px 8px;
+	cursor: pointer;
+	color: var(--text-normal);
+}
+
+.job-tracker-action-pill-btn:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+/* Modals & Template Settings */
 .job-tracker-modal {
 	padding: 8px 12px;
 }
