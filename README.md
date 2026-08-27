@@ -27,7 +27,12 @@ An all-in-one job search management plugin for [Obsidian](https://obsidian.md). 
   - 👥 **Key Contacts**: Dynamic list of hiring managers, recruiters, coordinators.
   - 📅 **Interviews & Stages**: Chronological list of interview rounds linked to prep notes.
   - 📝 **Notes & Activity Log**: Timestamped audit trail of status updates and feedback.
-  - 📄 **Job Description**: Space to paste requirements, role details, and research.
+  - 📄 **Job Description**: Native embedded PDF viewer (`![[JobDescription.pdf]]`), linked Markdown files, or pasted job specifications.
+
+### 📎 Job Description PDF & Markdown Attachments
+- Attach PDFs or Markdown job postings directly from your local computer or link existing vault files.
+- Automatically saved into your designated attachments folder (`Job Applications/Attachments/`).
+- Seamlessly embedded in the job application note and accessible via 1-click badges in Kanban, Table, and List views.
 
 ### 👥 Contacts Management
 - Track recruiters, recruiting coordinators, hiring managers, teammates, executives, or custom roles.
@@ -75,8 +80,9 @@ Open the Obsidian Command Palette (<kbd>Cmd</kbd> + <kbd>P</kbd> or <kbd>Ctrl</k
 
 | Command | Description |
 | :--- | :--- |
-| `Job Application Tracker: Open tracker dashboard` | Opens the dashboard in the sidebar (Kanban, Table, List, Metrics) |
+| `Job Application Tracker: Open tracker dashboard` | Opens the dashboard (Kanban, Table, List, Metrics) |
 | `Job Application Tracker: Add new job application` | Opens modal to create a new job application note |
+| `Job Application Tracker: Edit application details & attachments` | Edit application fields & attach/replace PDF/MD job descriptions |
 | `Job Application Tracker: Update application status` | Fast status picker & activity log updater |
 | `Job Application Tracker: Add contact to application` | Add recruiter/hiring manager info to an application |
 | `Job Application Tracker: Add interview to application` | Schedule an interview round & create prep note |

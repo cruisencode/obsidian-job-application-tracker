@@ -139,17 +139,46 @@ export class NewApplicationModal extends Modal {
 				})
 			);
 
-		contentEl.createEl("h3", { text: "Initial Notes" });
+		contentEl.createEl("h3", { text: "Job Description & Attachments" });
 
-		// Notes
+		// Upload PDF or Markdown file
+		let selectedAttachmentFile: File | null = null;
+		const uploadSetting = new Setting(contentEl)
+			.setName("Attach Job Description File")
+			.setDesc("Upload a PDF or Markdown file from your computer (auto-saved into attachments folder)");
+
+		const fileInput = uploadSetting.controlEl.createEl("input", {
+			type: "file",
+			attr: { accept: ".pdf,.md,.txt" },
+			cls: "job-tracker-file-input",
+		});
+		fileInput.onchange = () => {
+			if (fileInput.files && fileInput.files.length > 0) {
+				selectedAttachmentFile = fileInput.files[0];
+			}
+		};
+
+		// Link existing vault file
+		let existingVaultFilePath = "";
 		new Setting(contentEl)
-			.setName("Notes")
-			.setDesc("Any quick thoughts, referral name, or notes")
+			.setName("Or Link Existing Vault File")
+			.setDesc("Vault path or wikilink to an existing PDF/MD file (e.g. Attachments/JD.pdf)")
+			.addText((text) =>
+				text.setPlaceholder("Attachments/JobDescription.pdf").onChange((value) => {
+					existingVaultFilePath = value.trim();
+				})
+			);
+
+		// Raw Job Description Text
+		let jobDescriptionText = "";
+		new Setting(contentEl)
+			.setName("Paste Job Description Text")
+			.setDesc("Optional raw text or notes from the job posting")
 			.addTextArea((textArea) => {
-				textArea.setPlaceholder("Notes...").onChange((value) => {
-					this.notes = value;
+				textArea.setPlaceholder("Paste requirements, responsibilities, etc.").onChange((value) => {
+					jobDescriptionText = value;
 				});
-				textArea.inputEl.rows = 3;
+				textArea.inputEl.rows = 4;
 			});
 
 		// Action Buttons
@@ -159,7 +188,7 @@ export class NewApplicationModal extends Modal {
 					.setButtonText("Create Application")
 					.setCta()
 					.onClick(async () => {
-						await this.handleSubmit();
+						await this.handleSubmit(selectedAttachmentFile, existingVaultFilePath, jobDescriptionText);
 					})
 			)
 			.addButton((btn) =>
@@ -169,10 +198,23 @@ export class NewApplicationModal extends Modal {
 			);
 	}
 
-	async handleSubmit() {
+	async handleSubmit(
+		uploadedFile: File | null,
+		existingVaultPath: string,
+		jobDescriptionText: string
+	) {
 		if (!this.company.trim() || !this.role.trim()) {
 			alert("Please enter both a company name and a role.");
 			return;
+		}
+
+		let attachmentPath = existingVaultPath || "";
+		if (uploadedFile) {
+			const savedFile = await this.plugin.appService.saveAttachment(
+				uploadedFile,
+				`${this.company.trim()} - ${this.role.trim()}`
+			);
+			attachmentPath = savedFile.path;
 		}
 
 		const contacts: Contact[] = [];
@@ -195,6 +237,8 @@ export class NewApplicationModal extends Modal {
 			jobUrl: this.jobUrl.trim(),
 			source: this.source.trim(),
 			notes: this.notes.trim(),
+			jobDescription: jobDescriptionText.trim() || undefined,
+			jobDescriptionFile: attachmentPath || undefined,
 			contacts: contacts,
 		});
 

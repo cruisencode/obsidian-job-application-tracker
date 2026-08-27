@@ -87,6 +87,7 @@ date: "{{date}}"
 export const DEFAULT_SETTINGS: JobApplicationTrackerSettings = {
 	trackerFolderPath: "Job Applications",
 	interviewNotesFolderPath: "Job Applications/Interviews",
+	attachmentsFolderPath: "Job Applications/Attachments",
 	statuses: DEFAULT_STATUSES,
 	defaultStatus: "Applied",
 	interviewPrepTemplate: DEFAULT_INTERVIEW_PREP_TEMPLATE,

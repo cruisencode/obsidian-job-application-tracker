@@ -8,6 +8,7 @@ import { UpdateStatusModal } from "./modals/UpdateStatusModal";
 import { AddContactModal } from "./modals/AddContactModal";
 import { AddInterviewModal } from "./modals/AddInterviewModal";
 import { LogInterviewOutcomeModal } from "./modals/LogInterviewOutcomeModal";
+import { EditApplicationModal } from "./modals/EditApplicationModal";
 import { JobTrackerView } from "./views/JobTrackerView";
 
 export default class JobApplicationTrackerPlugin extends Plugin {
@@ -63,6 +64,16 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			name: "Add new job application",
 			callback: () => {
 				new NewApplicationModal(this.app, this).open();
+			},
+		});
+
+		// Command: Edit application details & attachments
+		this.addCommand({
+			id: "edit-job-application",
+			name: "Edit application details & attachments",
+			callback: () => {
+				const activeApp = this.getActiveApplication();
+				new EditApplicationModal(this.app, this, activeApp).open();
 			},
 		});
 

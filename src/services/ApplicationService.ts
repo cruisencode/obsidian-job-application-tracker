@@ -57,6 +57,34 @@ export class ApplicationService {
 
 	/**
 	 * Generates markdown body content for a newly created application.
+	/**
+	 * Saves an attachment file (PDF, MD, etc.) into the attachments folder and returns the created TFile.
+	 */
+	async saveAttachment(file: File, prefix?: string): Promise<TFile> {
+		const folderPath = this.plugin.settings.attachmentsFolderPath || "Job Applications/Attachments";
+		await this.ensureFolder(folderPath);
+
+		const arrayBuffer = await file.arrayBuffer();
+		const safeOriginalName = this.sanitizeFileName(file.name);
+		const cleanPrefix = prefix ? `${this.sanitizeFileName(prefix)} - ` : "";
+		const baseFileName = `${cleanPrefix}${safeOriginalName}`;
+
+		let filePath = `${normalizePath(folderPath)}/${baseFileName}`;
+		let counter = 1;
+
+		while (this.app.vault.getAbstractFileByPath(filePath) != null) {
+			const extIndex = baseFileName.lastIndexOf(".");
+			const nameWithoutExt = extIndex !== -1 ? baseFileName.substring(0, extIndex) : baseFileName;
+			const ext = extIndex !== -1 ? baseFileName.substring(extIndex) : "";
+			filePath = `${normalizePath(folderPath)}/${nameWithoutExt} (${counter})${ext}`;
+			counter++;
+		}
+
+		return await this.app.vault.createBinary(filePath, new Uint8Array(arrayBuffer));
+	}
+
+	/**
+	 * Generates markdown body content for a newly created application.
 	 */
 	generateNoteContent(appData: Partial<JobApplication>): string {
 		const today = this.getTodayDateString();
@@ -102,9 +130,12 @@ export class ApplicationService {
 		body += `\n`;
 
 		body += `## 📄 Job Description\n`;
+		if (appData.jobDescriptionFile) {
+			body += `![[${appData.jobDescriptionFile}]]\n\n`;
+		}
 		if (appData.jobDescription) {
 			body += `${appData.jobDescription}\n`;
-		} else {
+		} else if (!appData.jobDescriptionFile) {
 			body += `*Paste job description or requirements here...*\n`;
 		}
 
@@ -125,6 +156,7 @@ export class ApplicationService {
 		source?: string;
 		notes?: string;
 		jobDescription?: string;
+		jobDescriptionFile?: string;
 		contacts?: Contact[];
 	}): Promise<TFile> {
 		const folderPath = this.plugin.settings.trackerFolderPath;
@@ -162,6 +194,7 @@ export class ApplicationService {
 			salary: data.salary || "",
 			jobUrl: data.jobUrl || "",
 			source: data.source || "",
+			jobDescriptionFile: data.jobDescriptionFile || "",
 			tags: ["job-application"],
 			contacts: data.contacts || [],
 			interviews: [],
@@ -227,6 +260,7 @@ export class ApplicationService {
 			salary: frontmatter.salary || "",
 			jobUrl: frontmatter.jobUrl || "",
 			source: frontmatter.source || "",
+			jobDescriptionFile: frontmatter.jobDescriptionFile || "",
 			contacts: Array.isArray(frontmatter.contacts) ? frontmatter.contacts : [],
 			interviews: Array.isArray(frontmatter.interviews) ? frontmatter.interviews : [],
 			statusHistory: Array.isArray(frontmatter.statusHistory) ? frontmatter.statusHistory : [],
@@ -305,6 +339,57 @@ export class ApplicationService {
 	}
 
 	/**
+	 * Comprehensive update of application details and job description attachments.
+	 */
+	async updateApplicationDetails(
+		file: TFile,
+		fields: Partial<JobApplication>,
+		newJobDescriptionText?: string
+	): Promise<void> {
+		const today = this.getTodayDateString();
+
+		await this.app.fileManager.processFrontMatter(file, (fm) => {
+			if (fields.company !== undefined) fm.company = fields.company;
+			if (fields.role !== undefined) fm.role = fields.role;
+			if (fields.status !== undefined) fm.status = fields.status;
+			if (fields.location !== undefined) fm.location = fields.location;
+			if (fields.salary !== undefined) fm.salary = fields.salary;
+			if (fields.jobUrl !== undefined) fm.jobUrl = fields.jobUrl;
+			if (fields.source !== undefined) fm.source = fields.source;
+			if (fields.dateApplied !== undefined) fm.dateApplied = fields.dateApplied;
+			if (fields.jobDescriptionFile !== undefined) fm.jobDescriptionFile = fields.jobDescriptionFile;
+			fm.lastUpdated = today;
+		});
+
+		// Update Job Description section in note body if updated
+		if (fields.jobDescriptionFile !== undefined || newJobDescriptionText !== undefined) {
+			const content = await this.app.vault.read(file);
+			const jdHeader = "## 📄 Job Description";
+			if (content.includes(jdHeader)) {
+				let newJdContent = `${jdHeader}\n`;
+				if (fields.jobDescriptionFile) {
+					newJdContent += `![[${fields.jobDescriptionFile}]]\n\n`;
+				}
+				if (newJobDescriptionText) {
+					newJdContent += `${newJobDescriptionText}\n`;
+				} else if (!fields.jobDescriptionFile) {
+					newJdContent += `*Paste job description or requirements here...*\n`;
+				}
+
+				// Replace old JD section
+				const parts = content.split(jdHeader);
+				if (parts.length >= 2) {
+					const before = parts[0];
+					const updatedContent = `${before}${newJdContent}`;
+					await this.app.vault.modify(file, updatedContent);
+				}
+			}
+		}
+
+		new Notice(`Updated application details for ${file.basename}`);
+	}
+
+	/**
 	 * Update general application frontmatter fields.
 	 */
 	async updateApplicationFields(file: TFile, fields: Partial<JobApplication>): Promise<void> {
@@ -319,6 +404,7 @@ export class ApplicationService {
 			if (fields.jobUrl !== undefined) fm.jobUrl = fields.jobUrl;
 			if (fields.source !== undefined) fm.source = fields.source;
 			if (fields.dateApplied !== undefined) fm.dateApplied = fields.dateApplied;
+			if (fields.jobDescriptionFile !== undefined) fm.jobDescriptionFile = fields.jobDescriptionFile;
 			if (fields.contacts !== undefined) fm.contacts = fields.contacts;
 			if (fields.interviews !== undefined) fm.interviews = fields.interviews;
 			fm.lastUpdated = today;

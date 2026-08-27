@@ -435,6 +435,42 @@
 	gap: 3px;
 }
 
+.job-tracker-badge.badge-attachment {
+	background-color: rgba(66, 153, 225, 0.12);
+	color: var(--text-accent);
+	cursor: pointer;
+	border: 1px solid rgba(66, 153, 225, 0.25);
+}
+
+.job-tracker-badge.badge-attachment:hover {
+	background-color: rgba(66, 153, 225, 0.22);
+	text-decoration: underline;
+}
+
+.job-tracker-clickable {
+	cursor: pointer;
+}
+
+.job-tracker-clickable:hover {
+	text-decoration: underline;
+}
+
+.job-tracker-file-input {
+	font-size: 0.85em;
+	color: var(--text-normal);
+	cursor: pointer;
+}
+
+.job-tracker-attached-info {
+	background-color: var(--background-secondary);
+	border-left: 3px solid var(--interactive-accent);
+	padding: 8px 12px;
+	margin-bottom: 12px;
+	border-radius: 4px;
+	font-size: 0.85em;
+	color: var(--text-normal);
+}
+
 .job-tracker-card-meta {
 	display: flex;
 	align-items: center;

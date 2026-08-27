@@ -47,6 +47,20 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 					})
 			);
 
+		new Setting(containerEl)
+			.setName("Attachments Folder")
+			.setDesc("Folder where uploaded job description PDFs and markdown attachments are stored.")
+			.addText((text) =>
+				text
+					.setPlaceholder("Job Applications/Attachments")
+					.setValue(this.plugin.settings.attachmentsFolderPath || "Job Applications/Attachments")
+					.onChange(async (value) => {
+						this.plugin.settings.attachmentsFolderPath =
+							value.trim() || DEFAULT_SETTINGS.attachmentsFolderPath;
+						await this.plugin.saveSettings();
+					})
+			);
+
 		// Defaults & Display
 		containerEl.createEl("h3", { text: "Display & Pipeline Defaults" });
 

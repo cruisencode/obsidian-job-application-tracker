@@ -13,6 +13,7 @@ import { NewApplicationModal } from "../modals/NewApplicationModal";
 import { UpdateStatusModal } from "../modals/UpdateStatusModal";
 import { AddContactModal } from "../modals/AddContactModal";
 import { AddInterviewModal } from "../modals/AddInterviewModal";
+import { EditApplicationModal } from "../modals/EditApplicationModal";
 
 export type TrackerViewMode = "kanban" | "table" | "list" | "metrics";
 
@@ -406,6 +407,20 @@ export class JobTrackerView extends ItemView {
 			const salBadge = badgesRow.createSpan({ cls: "job-tracker-badge badge-salary" });
 			salBadge.createSpan({ text: app.salary });
 		}
+		if (app.jobDescriptionFile) {
+			const isPdf = app.jobDescriptionFile.toLowerCase().endsWith(".pdf");
+			const jdBadge = badgesRow.createSpan({
+				cls: "job-tracker-badge badge-attachment",
+				attr: { "aria-label": `Open attached JD: ${app.jobDescriptionFile}` },
+			});
+			const jdIcon = jdBadge.createSpan({ cls: "badge-icon" });
+			setIcon(jdIcon, isPdf ? "file-text" : "file");
+			jdBadge.createSpan({ text: isPdf ? "PDF JD" : "MD JD" });
+			jdBadge.onclick = (e) => {
+				e.stopPropagation();
+				this.openNote(app.jobDescriptionFile!);
+			};
+		}
 
 		// Contacts & Interviews meta
 		const metaRow = card.createDiv({ cls: "job-tracker-card-meta" });
@@ -583,6 +598,15 @@ export class JobTrackerView extends ItemView {
 			if (app.salary) detailsRow.createSpan({ text: `💰 ${app.salary}` });
 			if (app.source) detailsRow.createSpan({ text: `🔗 ${app.source}` });
 			if (app.dateApplied) detailsRow.createSpan({ text: `📅 Applied: ${app.dateApplied}` });
+			if (app.jobDescriptionFile) {
+				const isPdf = app.jobDescriptionFile.toLowerCase().endsWith(".pdf");
+				const jdPill = detailsRow.createSpan({
+					text: isPdf ? `📄 PDF JD` : `📝 MD JD`,
+					cls: "job-tracker-list-highlight job-tracker-clickable",
+					attr: { "aria-label": `Open attached JD: ${app.jobDescriptionFile}` },
+				});
+				jdPill.onclick = () => this.openNote(app.jobDescriptionFile!);
+			}
 
 			if (app.interviews.length > 0) {
 				const nextIv = app.interviews.find((i) => i.status === "Scheduled");
@@ -811,6 +835,13 @@ export class JobTrackerView extends ItemView {
 
 		menu.addItem((item) =>
 			item
+				.setTitle("Edit Details & Attachment")
+				.setIcon("edit")
+				.onClick(() => new EditApplicationModal(this.app, this.plugin, app).open())
+		);
+
+		menu.addItem((item) =>
+			item
 				.setTitle("Update Status")
 				.setIcon("arrow-right-circle")
 				.onClick(() => new UpdateStatusModal(this.app, this.plugin, app).open())
@@ -829,6 +860,16 @@ export class JobTrackerView extends ItemView {
 				.setIcon("user-plus")
 				.onClick(() => new AddContactModal(this.app, this.plugin, app).open())
 		);
+
+		if (app.jobDescriptionFile) {
+			const isPdf = app.jobDescriptionFile.toLowerCase().endsWith(".pdf");
+			menu.addItem((item) =>
+				item
+					.setTitle(isPdf ? "Open Attached PDF" : "Open Attached JD")
+					.setIcon(isPdf ? "file-text" : "file")
+					.onClick(() => this.openNote(app.jobDescriptionFile!))
+			);
+		}
 
 		if (app.jobUrl) {
 			menu.addItem((item) =>

@@ -64,15 +64,18 @@ export interface JobApplication {
 	tags: string[];
 	notes?: string;
 	jobDescription?: string;
+	jobDescriptionFile?: string; // Path or name of attached PDF or MD file
 }
 
 export interface JobApplicationTrackerSettings {
 	trackerFolderPath: string;
 	interviewNotesFolderPath: string;
+	attachmentsFolderPath: string;
 	statuses: JobStatus[];
 	defaultStatus: JobStatus;
 	interviewPrepTemplate: string;
 	defaultSourceOptions: string[];
 	openViewLocation: "tab" | "right-sidebar" | "left-sidebar";
 }
+
 
