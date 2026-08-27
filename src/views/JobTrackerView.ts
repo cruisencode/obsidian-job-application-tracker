@@ -267,16 +267,16 @@ export class JobTrackerView extends ItemView {
 			const q = this.searchQuery.toLowerCase().trim();
 			result = result.filter(
 				(a) =>
-					a.company.toLowerCase().includes(q) ||
-					a.role.toLowerCase().includes(q) ||
+					(a.company ?? "").toLowerCase().includes(q) ||
+					(a.role ?? "").toLowerCase().includes(q) ||
 					(a.location && a.location.toLowerCase().includes(q)) ||
 					(a.source && a.source.toLowerCase().includes(q)) ||
 					(a.salary && a.salary.toLowerCase().includes(q)) ||
-					a.contacts.some(
+					(a.contacts?.some(
 						(c) =>
 							c.name.toLowerCase().includes(q) ||
 							(c.email && c.email.toLowerCase().includes(q))
-					)
+					) ?? false)
 			);
 		}
 
@@ -561,7 +561,7 @@ export class JobTrackerView extends ItemView {
 
 			// Contacts
 			const tdContacts = tr.createEl("td");
-			if (app.contacts.length > 0) {
+			if (app.contacts?.length > 0) {
 				tdContacts.createSpan({
 					text: `${app.contacts.map((c) => c.name).join(", ")}`,
 					cls: "table-contacts-preview",
@@ -572,7 +572,7 @@ export class JobTrackerView extends ItemView {
 
 			// Interviews
 			const tdInterviews = tr.createEl("td");
-			if (app.interviews.length > 0) {
+			if (app.interviews?.length > 0) {
 				tdInterviews.createSpan({
 					text: `${app.interviews.length} round(s)`,
 					cls: "table-interviews-badge",
@@ -638,7 +638,7 @@ export class JobTrackerView extends ItemView {
 				jdPill.onclick = () => this.openNote(app.jobDescriptionFile!);
 			}
 
-			if (app.interviews.length > 0) {
+			if (app.interviews?.length > 0) {
 				const nextIv = app.interviews.find((i) => i.status === "Scheduled");
 				if (nextIv) {
 					detailsRow.createSpan({

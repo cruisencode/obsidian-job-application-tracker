@@ -362,13 +362,14 @@ export class ApplicationService {
 
 		// If a note was provided, append it to the Notes & Activity Log section in the markdown
 		if (note) {
-			const content = await this.app.vault.read(file);
-			const logHeader = "## 📝 Notes & Activity Log";
-			if (content.includes(logHeader)) {
-				const insertion = `\n- **${today}** (${newStatus}): ${note}`;
-				const updatedContent = content.replace(logHeader, `${logHeader}${insertion}`);
-				await this.app.vault.modify(file, updatedContent);
-			}
+			await this.app.vault.process(file, (content) => {
+				const logHeader = "## 📝 Notes & Activity Log";
+				if (content.includes(logHeader)) {
+					const insertion = `\n- **${today}** (${newStatus}): ${note}`;
+					return content.replace(logHeader, () => `${logHeader}${insertion}`);
+				}
+				return content;
+			});
 		}
 
 		new Notice(`Updated status to "${newStatus}" for ${file.basename}`);
@@ -475,9 +476,9 @@ export class ApplicationService {
 				if (contact.notes) contactLine += `\n  - *Notes:* ${contact.notes}`;
 
 				if (content.includes("*No contacts added yet.*")) {
-					return content.replace("*No contacts added yet.*", contactLine);
+					return content.replace("*No contacts added yet.*", () => contactLine);
 				} else {
-					return content.replace(contactHeader, `${contactHeader}\n${contactLine}`);
+					return content.replace(contactHeader, () => `${contactHeader}\n${contactLine}`);
 				}
 			}
 			return content;
@@ -574,9 +575,9 @@ export class ApplicationService {
 				const interviewLine = `- **${interview.roundName}** (${interview.status}) - ${interview.date || "TBD"} ${interview.time || ""}${prepLink}`;
 
 				if (content.includes("*No interviews scheduled yet.*")) {
-					return content.replace("*No interviews scheduled yet.*", interviewLine);
+					return content.replace("*No interviews scheduled yet.*", () => interviewLine);
 				} else {
-					return content.replace(interviewHeader, `${interviewHeader}\n${interviewLine}`);
+					return content.replace(interviewHeader, () => `${interviewHeader}\n${interviewLine}`);
 				}
 			}
 			return content;
@@ -627,7 +628,7 @@ export class ApplicationService {
 				const logHeader = "## 📝 Notes & Activity Log";
 				if (content.includes(logHeader)) {
 					const insertion = `\n- **${today}** (Interview ${status}): ${outcomeNotes}`;
-					return content.replace(logHeader, `${logHeader}${insertion}`);
+					return content.replace(logHeader, () => `${logHeader}${insertion}`);
 				}
 				return content;
 			});
@@ -646,11 +647,26 @@ export class ApplicationService {
 	}
 
 	/**
-	 * Synchronizes Key Contacts and Interviews markdown body sections from frontmatter cache.
+	 * Synchronizes Key Contacts and Interviews markdown body sections.
+	 * Accepts optional pre-fetched data to avoid reading from the (potentially stale) metadata cache
+	 * when called immediately after processFrontMatter.
 	 */
-	async syncNoteBodySections(file: TFile): Promise<void> {
-		const appData = this.getApplicationFromCache(file);
-		if (!appData) return;
+	async syncNoteBodySections(
+		file: TFile,
+		freshData?: { contacts?: Contact[]; interviews?: InterviewRound[] }
+	): Promise<void> {
+		let contacts: Contact[];
+		let interviews: InterviewRound[];
+
+		if (freshData) {
+			contacts = freshData.contacts ?? [];
+			interviews = freshData.interviews ?? [];
+		} else {
+			const appData = this.getApplicationFromCache(file);
+			if (!appData) return;
+			contacts = appData.contacts ?? [];
+			interviews = appData.interviews ?? [];
+		}
 
 		await this.app.vault.process(file, (content) => {
 			let updated = content;
@@ -658,8 +674,8 @@ export class ApplicationService {
 			// Contacts section
 			const contactHeader = "## 👥 Key Contacts";
 			let newContactsSection = `${contactHeader}\n`;
-			if (appData.contacts && appData.contacts.length > 0) {
-				for (const c of appData.contacts) {
+			if (contacts.length > 0) {
+				for (const c of contacts) {
 					newContactsSection += `- **${c.name}** (${c.role})${c.email ? ` - [${c.email}](mailto:${c.email})` : ""}${c.phone ? ` - ${c.phone}` : ""}${c.linkedin ? ` - [LinkedIn](${c.linkedin})` : ""}${c.notes ? `\n  - *Notes:* ${c.notes}` : ""}\n`;
 				}
 			} else {
@@ -668,14 +684,14 @@ export class ApplicationService {
 
 			if (updated.includes(contactHeader)) {
 				const regex = new RegExp(`${contactHeader}[\\s\\S]*?(?=\\n## |$)`);
-				updated = updated.replace(regex, newContactsSection.trimEnd());
+				updated = updated.replace(regex, () => newContactsSection.trimEnd());
 			}
 
 			// Interviews section
 			const interviewHeader = "## 📅 Interviews & Stages";
 			let newInterviewsSection = `${interviewHeader}\n`;
-			if (appData.interviews && appData.interviews.length > 0) {
-				for (const iv of appData.interviews) {
+			if (interviews.length > 0) {
+				for (const iv of interviews) {
 					const prepLink = iv.prepNotePath ? ` - [[${iv.prepNotePath}|Prep Note]]` : "";
 					newInterviewsSection += `- **${iv.roundName}** (${iv.status}) - ${iv.date || "TBD"} ${iv.time || ""}${prepLink}\n`;
 				}
@@ -685,7 +701,7 @@ export class ApplicationService {
 
 			if (updated.includes(interviewHeader)) {
 				const regex = new RegExp(`${interviewHeader}[\\s\\S]*?(?=\\n## |$)`);
-				updated = updated.replace(regex, newInterviewsSection.trimEnd());
+				updated = updated.replace(regex, () => newInterviewsSection.trimEnd());
 			}
 
 			return updated;
@@ -697,6 +713,8 @@ export class ApplicationService {
 	 */
 	async updateContact(file: TFile, contactId: string, updated: Partial<Contact>): Promise<void> {
 		const today = this.getTodayDateString();
+		let freshContacts: Contact[] = [];
+		let freshInterviews: InterviewRound[] = [];
 		await this.app.fileManager.processFrontMatter(file, (fm) => {
 			if (Array.isArray(fm.contacts)) {
 				const idx = fm.contacts.findIndex((c: Contact) => c.id === contactId);
@@ -705,8 +723,10 @@ export class ApplicationService {
 				}
 			}
 			fm.lastUpdated = today;
+			freshContacts = Array.isArray(fm.contacts) ? [...fm.contacts] : [];
+			freshInterviews = Array.isArray(fm.interviews) ? [...fm.interviews] : [];
 		});
-		await this.syncNoteBodySections(file);
+		await this.syncNoteBodySections(file, { contacts: freshContacts, interviews: freshInterviews });
 		new Notice(`Updated contact on ${file.basename}`);
 	}
 
@@ -715,13 +735,17 @@ export class ApplicationService {
 	 */
 	async deleteContact(file: TFile, contactId: string): Promise<void> {
 		const today = this.getTodayDateString();
+		let freshContacts: Contact[] = [];
+		let freshInterviews: InterviewRound[] = [];
 		await this.app.fileManager.processFrontMatter(file, (fm) => {
 			if (Array.isArray(fm.contacts)) {
 				fm.contacts = fm.contacts.filter((c: Contact) => c.id !== contactId);
 			}
 			fm.lastUpdated = today;
+			freshContacts = Array.isArray(fm.contacts) ? [...fm.contacts] : [];
+			freshInterviews = Array.isArray(fm.interviews) ? [...fm.interviews] : [];
 		});
-		await this.syncNoteBodySections(file);
+		await this.syncNoteBodySections(file, { contacts: freshContacts, interviews: freshInterviews });
 		new Notice(`Removed contact from ${file.basename}`);
 	}
 
@@ -730,6 +754,8 @@ export class ApplicationService {
 	 */
 	async updateInterview(file: TFile, interviewId: string, updated: Partial<InterviewRound>): Promise<void> {
 		const today = this.getTodayDateString();
+		let freshContacts: Contact[] = [];
+		let freshInterviews: InterviewRound[] = [];
 		await this.app.fileManager.processFrontMatter(file, (fm) => {
 			if (Array.isArray(fm.interviews)) {
 				const idx = fm.interviews.findIndex((i: InterviewRound) => i.id === interviewId);
@@ -738,8 +764,10 @@ export class ApplicationService {
 				}
 			}
 			fm.lastUpdated = today;
+			freshContacts = Array.isArray(fm.contacts) ? [...fm.contacts] : [];
+			freshInterviews = Array.isArray(fm.interviews) ? [...fm.interviews] : [];
 		});
-		await this.syncNoteBodySections(file);
+		await this.syncNoteBodySections(file, { contacts: freshContacts, interviews: freshInterviews });
 		new Notice(`Updated interview round on ${file.basename}`);
 	}
 
@@ -748,13 +776,17 @@ export class ApplicationService {
 	 */
 	async deleteInterview(file: TFile, interviewId: string): Promise<void> {
 		const today = this.getTodayDateString();
+		let freshContacts: Contact[] = [];
+		let freshInterviews: InterviewRound[] = [];
 		await this.app.fileManager.processFrontMatter(file, (fm) => {
 			if (Array.isArray(fm.interviews)) {
 				fm.interviews = fm.interviews.filter((i: InterviewRound) => i.id !== interviewId);
 			}
 			fm.lastUpdated = today;
+			freshContacts = Array.isArray(fm.contacts) ? [...fm.contacts] : [];
+			freshInterviews = Array.isArray(fm.interviews) ? [...fm.interviews] : [];
 		});
-		await this.syncNoteBodySections(file);
+		await this.syncNoteBodySections(file, { contacts: freshContacts, interviews: freshInterviews });
 		new Notice(`Removed interview round from ${file.basename}`);
 	}
 }
