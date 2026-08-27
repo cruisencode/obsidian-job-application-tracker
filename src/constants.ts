@@ -91,4 +91,5 @@ export const DEFAULT_SETTINGS: JobApplicationTrackerSettings = {
 	defaultStatus: "Applied",
 	interviewPrepTemplate: DEFAULT_INTERVIEW_PREP_TEMPLATE,
 	defaultSourceOptions: DEFAULT_SOURCE_OPTIONS,
+	openViewLocation: "tab",
 };

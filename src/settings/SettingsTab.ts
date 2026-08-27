@@ -47,8 +47,22 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// Defaults
-		containerEl.createEl("h3", { text: "Defaults & Pipeline" });
+		// Defaults & Display
+		containerEl.createEl("h3", { text: "Display & Pipeline Defaults" });
+
+		new Setting(containerEl)
+			.setName("Default View Location")
+			.setDesc("Where to open the Job Application Tracker dashboard when clicking the ribbon icon or command.")
+			.addDropdown((dropdown) => {
+				dropdown.addOption("tab", "Main Tab (Center, Recommended for Kanban)");
+				dropdown.addOption("right-sidebar", "Right Sidebar");
+				dropdown.addOption("left-sidebar", "Left Sidebar");
+				dropdown.setValue(this.plugin.settings.openViewLocation || "tab");
+				dropdown.onChange(async (value) => {
+					this.plugin.settings.openViewLocation = value as "tab" | "right-sidebar" | "left-sidebar";
+					await this.plugin.saveSettings();
+				});
+			});
 
 		new Setting(containerEl)
 			.setName("Default Initial Status")

@@ -30,12 +30,30 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			this.activateView();
 		});
 
-		// Command: Open Job Application Tracker view
+		// Command: Open Job Application Tracker view (default location)
 		this.addCommand({
 			id: "open-job-tracker-view",
-			name: "Open tracker dashboard (Kanban / Table / List)",
+			name: "Open tracker dashboard (Kanban / Table / List / Metrics)",
 			callback: () => {
 				this.activateView();
+			},
+		});
+
+		// Command: Open Job Application Tracker in Main Tab
+		this.addCommand({
+			id: "open-job-tracker-main-tab",
+			name: "Open tracker dashboard in Main Center Tab",
+			callback: () => {
+				this.activateView("tab");
+			},
+		});
+
+		// Command: Open Job Application Tracker in Sidebar
+		this.addCommand({
+			id: "open-job-tracker-sidebar",
+			name: "Open tracker dashboard in Sidebar",
+			callback: () => {
+				this.activateView("right-sidebar");
 			},
 		});
 
@@ -92,8 +110,9 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 		this.addSettingTab(new JobApplicationTrackerSettingTab(this.app, this));
 	}
 
-	async activateView() {
+	async activateView(location?: "tab" | "right-sidebar" | "left-sidebar") {
 		const { workspace } = this.app;
+		const targetLocation = location || this.settings.openViewLocation || "tab";
 
 		let leaf: WorkspaceLeaf | null = null;
 		const leaves = workspace.getLeavesOfType(VIEW_TYPE_JOB_TRACKER);
@@ -101,8 +120,15 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 		if (leaves.length > 0) {
 			leaf = leaves[0];
 		} else {
-			// Prefer right sidebar leaf, or main workspace leaf if preferred
-			leaf = workspace.getRightLeaf(false) || workspace.getLeaf(false);
+			if (targetLocation === "tab") {
+				// Open as a full center tab in main workspace
+				leaf = workspace.getLeaf("tab");
+			} else if (targetLocation === "left-sidebar") {
+				leaf = workspace.getLeftLeaf(false);
+			} else {
+				leaf = workspace.getRightLeaf(false);
+			}
+
 			if (leaf) {
 				await leaf.setViewState({ type: VIEW_TYPE_JOB_TRACKER, active: true });
 			}
