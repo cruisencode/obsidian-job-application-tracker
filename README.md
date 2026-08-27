@@ -65,7 +65,7 @@ An all-in-one job search management plugin for [Obsidian](https://obsidian.md). 
 1. Clone this repository into your Obsidian plugins folder, or symlink it:
    ```bash
    mkdir -p "/path/to/your/vault/.obsidian/plugins"
-   ln -s "/path/to/obsidian-job-application-tracker" "/path/to/your/vault/.obsidian/plugins/obsidian-job-application-tracker"
+   ln -s "/path/to/obsidian-job-application-tracker" "/path/to/your/vault/.obsidian/plugins/job-application-tracker"
    ```
 2. Build the plugin:
    ```bash
