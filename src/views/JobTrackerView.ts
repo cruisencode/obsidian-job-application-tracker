@@ -5,7 +5,6 @@ import {
 	TFile,
 	debounce,
 	Menu,
-	MarkdownRenderer,
 } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { JobApplication, JobStatus } from "../types";
@@ -17,6 +16,7 @@ import { AddInterviewModal } from "../modals/AddInterviewModal";
 import { EditApplicationModal } from "../modals/EditApplicationModal";
 import { ManageApplicationModal } from "../modals/ManageApplicationModal";
 import { ConfirmDeleteModal } from "../modals/ConfirmDeleteModal";
+import { SankeyDiagram, SankeyLink } from "./SankeyDiagram";
 
 export type TrackerViewMode = "kanban" | "table" | "list" | "metrics";
 
@@ -1030,28 +1030,17 @@ export class JobTrackerView extends ItemView {
 			return;
 		}
 
-		let mermaidCode = "```mermaid\nsankey-beta\n";
+		const sankeyLinks: SankeyLink[] = [];
 		for (const [key, count] of transitionMap.entries()) {
 			const [from, to] = key.split("|||");
-			mermaidCode += `"${from}","${to}",${count}\n`;
+			sankeyLinks.push({
+				source: from,
+				target: to,
+				value: count,
+			});
 		}
-		mermaidCode += "```";
 
-		try {
-			await MarkdownRenderer.render(this.app, mermaidCode, container, "", this);
-		} catch (err) {
-			console.error("Failed to render Mermaid Sankey diagram:", err);
-			container.empty();
-			const fallbackDiv = container.createDiv({ cls: "job-tracker-sankey-fallback" });
-			fallbackDiv.createEl("h5", { text: "Pipeline Flow Transitions" });
-			const flowList = fallbackDiv.createEl("ul");
-			for (const [key, count] of transitionMap.entries()) {
-				const [from, to] = key.split("|||");
-				flowList.createEl("li", {
-					text: `${from} ➔ ${to}: ${count} application(s)`,
-				});
-			}
-		}
+		SankeyDiagram.render(container, sankeyLinks, this.applications.length);
 	}
 
 	showCardMenu(e: MouseEvent, app: JobApplication) {

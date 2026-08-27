@@ -798,12 +798,36 @@
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
 	padding: 16px;
-	min-height: 200px;
+	min-height: 220px;
 }
 
-.job-tracker-sankey-container svg {
+.job-tracker-native-sankey-svg {
 	max-width: 100%;
 	height: auto;
+	display: block;
+}
+
+.sankey-ribbon {
+	cursor: pointer;
+	transition: fill-opacity 0.2s ease;
+}
+
+.sankey-ribbon:hover {
+	filter: brightness(1.2);
+}
+
+.sankey-node rect {
+	cursor: pointer;
+	transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.sankey-node rect:hover {
+	filter: brightness(1.25);
+}
+
+.sankey-node text {
+	user-select: none;
+	pointer-events: none;
 }
 
 /* Funnel Progress Bars */
