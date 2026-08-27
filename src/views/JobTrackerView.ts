@@ -774,16 +774,15 @@ export class JobTrackerView extends ItemView {
 		const sankeyContent = sankeySection.createDiv({ cls: "job-tracker-sankey-container" });
 		this.renderSankeyDiagram(sankeyContent);
 
-		// 3. Section: Pipeline Stage Funnel & Breakdown
+		// 3. Section: Pipeline Stage Breakdown
 		const funnelSection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
-		funnelSection.createEl("h4", { text: "Pipeline Stage History & Conversion" });
+		funnelSection.createEl("h4", { text: "Pipeline Stage Breakdown" });
 
 		const funnelBars = funnelSection.createDiv({ cls: "job-tracker-funnel-bars" });
 
 		for (const st of this.plugin.settings.statuses) {
-			const enteredCount = appHistories.filter((h) => h.visited.includes(st) || h.app.status === st).length;
-			const currentCount = this.applications.filter((a) => a.status === st).length;
-			const pct = totalApps > 0 ? ((enteredCount / totalApps) * 100).toFixed(1) : "0";
+			const count = this.applications.filter((a) => a.status === st).length;
+			const pct = totalApps > 0 ? ((count / totalApps) * 100).toFixed(1) : "0";
 
 			const barItem = funnelBars.createDiv({ cls: "job-tracker-funnel-item" });
 
@@ -793,7 +792,7 @@ export class JobTrackerView extends ItemView {
 
 			const rightLabel = labelRow.createDiv({ cls: "job-tracker-funnel-right" });
 			rightLabel.createSpan({
-				text: `${enteredCount} entered (${currentCount} currently active)`,
+				text: `${count} (${pct}%)`,
 				cls: "text-muted",
 			});
 
