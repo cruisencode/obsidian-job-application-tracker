@@ -650,21 +650,36 @@ export class JobTrackerView extends ItemView {
 		const metricsContainer = container.createDiv({ cls: "job-tracker-metrics-container" });
 
 		const totalApps = this.applications.length;
-		const activeStatuses: JobStatus[] = ["Wishlist", "Applied", "Screening", "Interviewing"];
+		const wishlistApps = this.applications.filter((a) => a.status === "Wishlist");
+		const appliedApps = this.applications.filter((a) => a.status !== "Wishlist");
+		const appliedTotal = appliedApps.length;
+
+		// Active in-progress applications (excluding Wishlist, and terminal states Offer, Rejected, Ghosted, Withdrawn)
+		const activeStatuses: JobStatus[] = ["Applied", "Screening", "Interviewing"];
 		const activeApps = this.applications.filter((a) => activeStatuses.includes(a.status));
-		const interviewApps = this.applications.filter(
-			(a) => ["Screening", "Interviewing", "Offer"].includes(a.status) || a.interviews.length > 0
+
+		// Applications that reached screening, interview, or offer stage
+		const interviewApps = appliedApps.filter(
+			(a) =>
+				a.status === "Screening" ||
+				a.status === "Interviewing" ||
+				a.status === "Offer" ||
+				(a.interviews && a.interviews.length > 0)
 		);
-		const offerApps = this.applications.filter((a) => a.status === "Offer");
-		const rejectedApps = this.applications.filter((a) => a.status === "Rejected");
-		const ghostedApps = this.applications.filter((a) => a.status === "Ghosted");
 
-		const appliedTotal = this.applications.filter((a) => a.status !== "Wishlist").length;
-		const respondedTotal = this.applications.filter(
-			(a) => a.status !== "Applied" && a.status !== "Wishlist" && a.status !== "Ghosted"
-		).length;
+		const offerApps = appliedApps.filter((a) => a.status === "Offer");
 
-		const responseRate = appliedTotal > 0 ? ((respondedTotal / appliedTotal) * 100).toFixed(1) : "0.0";
+		// Responses = Screening, Interviewing, Offer, or explicit Rejection from employer
+		const respondedApps = appliedApps.filter(
+			(a) =>
+				a.status === "Screening" ||
+				a.status === "Interviewing" ||
+				a.status === "Offer" ||
+				a.status === "Rejected" ||
+				(a.interviews && a.interviews.length > 0)
+		);
+
+		const responseRate = appliedTotal > 0 ? ((respondedApps.length / appliedTotal) * 100).toFixed(1) : "0.0";
 		const interviewRate = appliedTotal > 0 ? ((interviewApps.length / appliedTotal) * 100).toFixed(1) : "0.0";
 		const offerRate = appliedTotal > 0 ? ((offerApps.length / appliedTotal) * 100).toFixed(1) : "0.0";
 
@@ -678,12 +693,12 @@ export class JobTrackerView extends ItemView {
 		// 1. KPI Cards Grid
 		const kpiGrid = metricsContainer.createDiv({ cls: "job-tracker-kpi-grid" });
 
-		this.renderKpiCard(kpiGrid, "Total Applications", `${totalApps}`, "briefcase", "All tracked job notes");
-		this.renderKpiCard(kpiGrid, "Active Pipeline", `${activeApps.length}`, "activity", "In progress applications");
-		this.renderKpiCard(kpiGrid, "Response Rate", `${responseRate}%`, "mail", "Applications with a response");
-		this.renderKpiCard(kpiGrid, "Interview Rate", `${interviewRate}%`, "calendar-check", "Advancement to screens/interviews");
-		this.renderKpiCard(kpiGrid, "Offer Rate", `${offerRate}%`, "award", "Offers received");
-		this.renderKpiCard(kpiGrid, "Total Contacts", `${totalContacts}`, "users", "Recruiters & managers");
+		this.renderKpiCard(kpiGrid, "Total Applications", `${totalApps}`, "briefcase", `${appliedTotal} submitted, ${wishlistApps.length} wishlist`);
+		this.renderKpiCard(kpiGrid, "Active Pipeline", `${activeApps.length}`, "activity", "Applied, Screening & Interviewing");
+		this.renderKpiCard(kpiGrid, "Response Rate", `${responseRate}%`, "mail", `${respondedApps.length} of ${appliedTotal} submitted`);
+		this.renderKpiCard(kpiGrid, "Interview Rate", `${interviewRate}%`, "calendar-check", `${interviewApps.length} reached interviews`);
+		this.renderKpiCard(kpiGrid, "Offer Rate", `${offerRate}%`, "award", `${offerApps.length} offers received`);
+		this.renderKpiCard(kpiGrid, "Total Contacts", `${totalContacts}`, "users", "Recruiters & hiring managers");
 		this.renderKpiCard(
 			kpiGrid,
 			"Interviews",
@@ -696,7 +711,7 @@ export class JobTrackerView extends ItemView {
 		const sankeySection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
 		sankeySection.createEl("h4", { text: "Job Search Sankey Diagram" });
 		const sankeyDesc = sankeySection.createEl("p", {
-			text: "Visual flow of your job hunt from initial sources and applications through interview stages to offers and outcomes.",
+			text: "Visual flow of your job hunt from initial sources and submissions through interview stages to final outcomes.",
 			cls: "text-muted",
 		});
 		sankeyDesc.style.marginTop = "0";
@@ -742,7 +757,7 @@ export class JobTrackerView extends ItemView {
 			const src = app.source || "Unspecified";
 			const entry = sourceMap.get(src) || { total: 0, interviews: 0, offers: 0 };
 			entry.total++;
-			if (["Screening", "Interviewing", "Offer"].includes(app.status) || app.interviews.length > 0) {
+			if (["Screening", "Interviewing", "Offer"].includes(app.status) || (app.interviews && app.interviews.length > 0)) {
 				entry.interviews++;
 			}
 			if (app.status === "Offer") {
@@ -778,7 +793,7 @@ export class JobTrackerView extends ItemView {
 			}
 		}
 
-		// 4. Section: Recent Activity Timeline
+		// 5. Section: Recent Activity Timeline
 		const activitySection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
 		activitySection.createEl("h4", { text: "Recent Application Activity" });
 
@@ -849,7 +864,7 @@ export class JobTrackerView extends ItemView {
 			return;
 		}
 
-		// Count transitions between nodes
+		// Count transitions between nodes ensuring strict flow conservation
 		const transitionMap = new Map<string, number>();
 
 		const addTransition = (fromNode: string, toNode: string, count = 1) => {
@@ -863,39 +878,43 @@ export class JobTrackerView extends ItemView {
 			transitionMap.set(key, (transitionMap.get(key) || 0) + count);
 		};
 
-		// Aggregate flows based on user applications
+		// Track each application through a strict, balanced pipeline path
 		for (const app of this.applications) {
 			const source = app.source ? app.source : "Direct / Other";
 			const status = app.status;
+			const hasInterviews = app.interviews && app.interviews.length > 0;
 
 			if (status === "Wishlist") {
 				addTransition(source, "Wishlist", 1);
 			} else if (status === "Applied") {
 				addTransition(source, "Applied", 1);
+				addTransition("Applied", "Applied (Pending)", 1);
 			} else if (status === "Screening") {
 				addTransition(source, "Applied", 1);
 				addTransition("Applied", "Screening", 1);
+				addTransition("Screening", "Screening (In Progress)", 1);
 			} else if (status === "Interviewing") {
 				addTransition(source, "Applied", 1);
 				addTransition("Applied", "Interviewing", 1);
+				addTransition("Interviewing", "Interviewing (In Progress)", 1);
 			} else if (status === "Offer") {
 				addTransition(source, "Applied", 1);
 				addTransition("Applied", "Interviewing", 1);
 				addTransition("Interviewing", "Offer", 1);
 			} else if (status === "Rejected") {
 				addTransition(source, "Applied", 1);
-				if (app.interviews && app.interviews.length > 0) {
+				if (hasInterviews) {
 					addTransition("Applied", "Interviewing", 1);
-					addTransition("Interviewing", "Rejected", 1);
+					addTransition("Interviewing", "Rejected After Interview", 1);
 				} else {
-					addTransition("Applied", "Rejected", 1);
+					addTransition("Applied", "Rejected (No Interview)", 1);
 				}
 			} else if (status === "Ghosted") {
 				addTransition(source, "Applied", 1);
 				addTransition("Applied", "Ghosted", 1);
 			} else if (status === "Withdrawn") {
 				addTransition(source, "Applied", 1);
-				if (app.interviews && app.interviews.length > 0) {
+				if (hasInterviews) {
 					addTransition("Applied", "Interviewing", 1);
 					addTransition("Interviewing", "Withdrawn", 1);
 				} else {
