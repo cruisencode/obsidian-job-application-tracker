@@ -1,4 +1,4 @@
-import { App, Notice, TFile, TFolder, normalizePath } from "obsidian";
+import { App, Notice, TFile, TFolder, normalizePath, stringifyYaml } from "obsidian";
 import { Contact, InterviewRound, JobApplication, JobStatus, StatusHistoryEntry } from "../types";
 import JobApplicationTrackerPlugin from "../main";
 
@@ -12,6 +12,19 @@ export class ApplicationService {
 	}
 
 	/**
+	 * Resolves a file path or wikilink to a TFile in the vault.
+	 */
+	resolveFile(pathOrLink: string): TFile | null {
+		if (!pathOrLink) return null;
+		const normalized = normalizePath(pathOrLink);
+		const file = this.app.vault.getAbstractFileByPath(normalized);
+		if (file instanceof TFile) {
+			return file;
+		}
+		return this.app.metadataCache.getFirstLinkpathDest(pathOrLink, "");
+	}
+
+	/**
 	 * Ensure that a folder exists in the vault, creating parent directories if needed.
 	 */
 	async ensureFolder(folderPath: string): Promise<TFolder> {
@@ -20,9 +33,12 @@ export class ApplicationService {
 			return this.app.vault.getRoot();
 		}
 
-		const folder = this.app.vault.getAbstractFileByPath(normalized);
-		if (folder instanceof TFolder) {
-			return folder;
+		const abstractItem = this.app.vault.getAbstractFileByPath(normalized);
+		if (abstractItem instanceof TFolder) {
+			return abstractItem;
+		}
+		if (abstractItem instanceof TFile) {
+			throw new Error(`Path "${normalized}" is an existing file, not a folder.`);
 		}
 
 		// Ensure parent folder exists first
@@ -31,7 +47,15 @@ export class ApplicationService {
 			await this.ensureFolder(parentPath);
 		}
 
-		return await this.app.vault.createFolder(normalized);
+		try {
+			return await this.app.vault.createFolder(normalized);
+		} catch (err) {
+			const checkAgain = this.app.vault.getAbstractFileByPath(normalized);
+			if (checkAgain instanceof TFolder) {
+				return checkAgain;
+			}
+			throw err;
+		}
 	}
 
 	/**
@@ -56,8 +80,6 @@ export class ApplicationService {
 	}
 
 	/**
-	 * Generates markdown body content for a newly created application.
-	/**
 	 * Saves an attachment file (PDF, MD, etc.) into the attachments folder and returns the created TFile.
 	 */
 	async saveAttachment(file: File, prefix?: string): Promise<TFile> {
@@ -80,7 +102,7 @@ export class ApplicationService {
 			counter++;
 		}
 
-		return await this.app.vault.createBinary(filePath, new Uint8Array(arrayBuffer));
+		return await this.app.vault.createBinary(filePath, arrayBuffer);
 	}
 
 	/**
@@ -203,11 +225,7 @@ export class ApplicationService {
 			statusHistory: initialStatusHistory,
 		};
 
-		const yamlLines = ["---"];
-		for (const [key, value] of Object.entries(frontmatterObj)) {
-			yamlLines.push(`${key}: ${JSON.stringify(value)}`);
-		}
-		yamlLines.push("---", "");
+		const yamlHeader = `---\n${stringifyYaml(frontmatterObj)}---\n\n`;
 
 		const body = this.generateNoteContent({
 			...data,
@@ -215,7 +233,7 @@ export class ApplicationService {
 			dateApplied,
 		});
 
-		const fullContent = `${yamlLines.join("\n")}\n${body}`;
+		const fullContent = `${yamlHeader}${body}`;
 		const file = await this.app.vault.create(filePath, fullContent);
 		new Notice(`Created application: ${data.company} - ${data.role}`);
 		return file;
@@ -328,13 +346,14 @@ export class ApplicationService {
 
 		// If a note was provided, append it to the Notes & Activity Log section in the markdown
 		if (note) {
-			const content = await this.app.vault.read(file);
-			const logHeader = "## 📝 Notes & Activity Log";
-			if (content.includes(logHeader)) {
-				const insertion = `\n- **${today}** (${newStatus}): ${note}`;
-				const updatedContent = content.replace(logHeader, `${logHeader}${insertion}`);
-				await this.app.vault.modify(file, updatedContent);
-			}
+			await this.app.vault.process(file, (content) => {
+				const logHeader = "## 📝 Notes & Activity Log";
+				if (content.includes(logHeader)) {
+					const insertion = `\n- **${today}** (${newStatus}): ${note}`;
+					return content.replace(logHeader, `${logHeader}${insertion}`);
+				}
+				return content;
+			});
 		}
 
 		new Notice(`Updated status to "${newStatus}" for ${file.basename}`);
@@ -365,29 +384,30 @@ export class ApplicationService {
 
 		// Update Job Description section in note body if updated
 		if (fields.jobDescriptionFile !== undefined || newJobDescriptionText !== undefined) {
-			const content = await this.app.vault.read(file);
-			const jdHeader = "## 📄 Job Description";
-			if (content.includes(jdHeader)) {
-				let newJdContent = `${jdHeader}\n`;
-				if (fields.jobDescriptionFile) {
-					const isPdf = fields.jobDescriptionFile.toLowerCase().endsWith(".pdf");
-					const title = isPdf ? "Job Description (PDF)" : "Job Description (Markdown)";
-					newJdContent += `> [!abstract]- 📎 ${title}\n> ![[${fields.jobDescriptionFile}]]\n\n`;
-				}
-				if (newJobDescriptionText) {
-					newJdContent += `${newJobDescriptionText}\n`;
-				} else if (!fields.jobDescriptionFile) {
-					newJdContent += `*Paste job description or requirements here...*\n`;
-				}
+			await this.app.vault.process(file, (content) => {
+				const jdHeader = "## 📄 Job Description";
+				if (content.includes(jdHeader)) {
+					let newJdContent = `${jdHeader}\n`;
+					if (fields.jobDescriptionFile) {
+						const isPdf = fields.jobDescriptionFile.toLowerCase().endsWith(".pdf");
+						const title = isPdf ? "Job Description (PDF)" : "Job Description (Markdown)";
+						newJdContent += `> [!abstract]- 📎 ${title}\n> ![[${fields.jobDescriptionFile}]]\n\n`;
+					}
+					if (newJobDescriptionText) {
+						newJdContent += `${newJobDescriptionText}\n`;
+					} else if (!fields.jobDescriptionFile) {
+						newJdContent += `*Paste job description or requirements here...*\n`;
+					}
 
-				// Replace old JD section
-				const parts = content.split(jdHeader);
-				if (parts.length >= 2) {
-					const before = parts[0];
-					const updatedContent = `${before}${newJdContent}`;
-					await this.app.vault.modify(file, updatedContent);
+					// Replace old JD section
+					const parts = content.split(jdHeader);
+					if (parts.length >= 2) {
+						const before = parts[0];
+						return `${before}${newJdContent}`;
+					}
 				}
-			}
+				return content;
+			});
 		}
 
 		new Notice(`Updated application details for ${file.basename}`);
@@ -430,23 +450,23 @@ export class ApplicationService {
 		});
 
 		// Update ## 👥 Key Contacts section in body
-		const content = await this.app.vault.read(file);
-		const contactHeader = "## 👥 Key Contacts";
-		if (content.includes(contactHeader)) {
-			let contactLine = `- **${contact.name}** (${contact.role})`;
-			if (contact.email) contactLine += ` - [${contact.email}](mailto:${contact.email})`;
-			if (contact.phone) contactLine += ` - ${contact.phone}`;
-			if (contact.linkedin) contactLine += ` - [LinkedIn](${contact.linkedin})`;
-			if (contact.notes) contactLine += `\n  - *Notes:* ${contact.notes}`;
+		await this.app.vault.process(file, (content) => {
+			const contactHeader = "## 👥 Key Contacts";
+			if (content.includes(contactHeader)) {
+				let contactLine = `- **${contact.name}** (${contact.role})`;
+				if (contact.email) contactLine += ` - [${contact.email}](mailto:${contact.email})`;
+				if (contact.phone) contactLine += ` - ${contact.phone}`;
+				if (contact.linkedin) contactLine += ` - [LinkedIn](${contact.linkedin})`;
+				if (contact.notes) contactLine += `\n  - *Notes:* ${contact.notes}`;
 
-			let updatedContent = content;
-			if (content.includes("*No contacts added yet.*")) {
-				updatedContent = content.replace("*No contacts added yet.*", contactLine);
-			} else {
-				updatedContent = content.replace(contactHeader, `${contactHeader}\n${contactLine}`);
+				if (content.includes("*No contacts added yet.*")) {
+					return content.replace("*No contacts added yet.*", contactLine);
+				} else {
+					return content.replace(contactHeader, `${contactHeader}\n${contactLine}`);
+				}
 			}
-			await this.app.vault.modify(file, updatedContent);
-		}
+			return content;
+		});
 
 		new Notice(`Added contact ${contact.name} to ${file.basename}`);
 	}
@@ -472,7 +492,7 @@ export class ApplicationService {
 			counter++;
 		}
 
-		const appFile = this.app.vault.getAbstractFileByPath(appData.filePath);
+		const appFile = this.resolveFile(appData.filePath);
 		const appTitle = appFile instanceof TFile ? appFile.basename : `${appData.company} - ${appData.role}`;
 
 		let template = this.plugin.settings.interviewPrepTemplate || "";
@@ -530,22 +550,22 @@ export class ApplicationService {
 		});
 
 		// Update ## 📅 Interviews & Stages section in body
-		const content = await this.app.vault.read(file);
-		const interviewHeader = "## 📅 Interviews & Stages";
-		if (content.includes(interviewHeader)) {
-			const prepLink = interview.prepNotePath
-				? ` - [[${interview.prepNotePath}|Prep Note]]`
-				: "";
-			const interviewLine = `- **${interview.roundName}** (${interview.status}) - ${interview.date || "TBD"} ${interview.time || ""}${prepLink}`;
+		await this.app.vault.process(file, (content) => {
+			const interviewHeader = "## 📅 Interviews & Stages";
+			if (content.includes(interviewHeader)) {
+				const prepLink = interview.prepNotePath
+					? ` - [[${interview.prepNotePath}|Prep Note]]`
+					: "";
+				const interviewLine = `- **${interview.roundName}** (${interview.status}) - ${interview.date || "TBD"} ${interview.time || ""}${prepLink}`;
 
-			let updatedContent = content;
-			if (content.includes("*No interviews scheduled yet.*")) {
-				updatedContent = content.replace("*No interviews scheduled yet.*", interviewLine);
-			} else {
-				updatedContent = content.replace(interviewHeader, `${interviewHeader}\n${interviewLine}`);
+				if (content.includes("*No interviews scheduled yet.*")) {
+					return content.replace("*No interviews scheduled yet.*", interviewLine);
+				} else {
+					return content.replace(interviewHeader, `${interviewHeader}\n${interviewLine}`);
+				}
 			}
-			await this.app.vault.modify(file, updatedContent);
-		}
+			return content;
+		});
 
 		new Notice(`Added ${interview.roundName} to ${file.basename}`);
 		return { interview, prepFile };
@@ -588,15 +608,139 @@ export class ApplicationService {
 		});
 
 		if (outcomeNotes) {
-			const content = await this.app.vault.read(file);
-			const logHeader = "## 📝 Notes & Activity Log";
-			if (content.includes(logHeader)) {
-				const insertion = `\n- **${today}** (Interview ${status}): ${outcomeNotes}`;
-				const updatedContent = content.replace(logHeader, `${logHeader}${insertion}`);
-				await this.app.vault.modify(file, updatedContent);
-			}
+			await this.app.vault.process(file, (content) => {
+				const logHeader = "## 📝 Notes & Activity Log";
+				if (content.includes(logHeader)) {
+					const insertion = `\n- **${today}** (Interview ${status}): ${outcomeNotes}`;
+					return content.replace(logHeader, `${logHeader}${insertion}`);
+				}
+				return content;
+			});
 		}
 
 		new Notice(`Logged outcome for interview on ${file.basename}`);
 	}
+
+	/**
+	 * Moves an application file to Obsidian trash.
+	 */
+	async deleteApplication(file: TFile): Promise<void> {
+		const name = file.basename;
+		await this.app.vault.trash(file, true);
+		new Notice(`Moved "${name}" to trash.`);
+	}
+
+	/**
+	 * Synchronizes Key Contacts and Interviews markdown body sections from frontmatter cache.
+	 */
+	async syncNoteBodySections(file: TFile): Promise<void> {
+		const appData = this.getApplicationFromCache(file);
+		if (!appData) return;
+
+		await this.app.vault.process(file, (content) => {
+			let updated = content;
+
+			// Contacts section
+			const contactHeader = "## 👥 Key Contacts";
+			let newContactsSection = `${contactHeader}\n`;
+			if (appData.contacts && appData.contacts.length > 0) {
+				for (const c of appData.contacts) {
+					newContactsSection += `- **${c.name}** (${c.role})${c.email ? ` - [${c.email}](mailto:${c.email})` : ""}${c.phone ? ` - ${c.phone}` : ""}${c.linkedin ? ` - [LinkedIn](${c.linkedin})` : ""}${c.notes ? `\n  - *Notes:* ${c.notes}` : ""}\n`;
+				}
+			} else {
+				newContactsSection += `*No contacts added yet.*\n`;
+			}
+
+			if (updated.includes(contactHeader)) {
+				const regex = new RegExp(`${contactHeader}[\\s\\S]*?(?=\\n## |$)`);
+				updated = updated.replace(regex, newContactsSection.trimEnd());
+			}
+
+			// Interviews section
+			const interviewHeader = "## 📅 Interviews & Stages";
+			let newInterviewsSection = `${interviewHeader}\n`;
+			if (appData.interviews && appData.interviews.length > 0) {
+				for (const iv of appData.interviews) {
+					const prepLink = iv.prepNotePath ? ` - [[${iv.prepNotePath}|Prep Note]]` : "";
+					newInterviewsSection += `- **${iv.roundName}** (${iv.status}) - ${iv.date || "TBD"} ${iv.time || ""}${prepLink}\n`;
+				}
+			} else {
+				newInterviewsSection += `*No interviews scheduled yet.*\n`;
+			}
+
+			if (updated.includes(interviewHeader)) {
+				const regex = new RegExp(`${interviewHeader}[\\s\\S]*?(?=\\n## |$)`);
+				updated = updated.replace(regex, newInterviewsSection.trimEnd());
+			}
+
+			return updated;
+		});
+	}
+
+	/**
+	 * Updates an existing contact and syncs markdown note body.
+	 */
+	async updateContact(file: TFile, contactId: string, updated: Partial<Contact>): Promise<void> {
+		const today = this.getTodayDateString();
+		await this.app.fileManager.processFrontMatter(file, (fm) => {
+			if (Array.isArray(fm.contacts)) {
+				const idx = fm.contacts.findIndex((c: Contact) => c.id === contactId);
+				if (idx !== -1) {
+					fm.contacts[idx] = { ...fm.contacts[idx], ...updated };
+				}
+			}
+			fm.lastUpdated = today;
+		});
+		await this.syncNoteBodySections(file);
+		new Notice(`Updated contact on ${file.basename}`);
+	}
+
+	/**
+	 * Deletes a contact from frontmatter and note body.
+	 */
+	async deleteContact(file: TFile, contactId: string): Promise<void> {
+		const today = this.getTodayDateString();
+		await this.app.fileManager.processFrontMatter(file, (fm) => {
+			if (Array.isArray(fm.contacts)) {
+				fm.contacts = fm.contacts.filter((c: Contact) => c.id !== contactId);
+			}
+			fm.lastUpdated = today;
+		});
+		await this.syncNoteBodySections(file);
+		new Notice(`Removed contact from ${file.basename}`);
+	}
+
+	/**
+	 * Updates an interview round and syncs markdown note body.
+	 */
+	async updateInterview(file: TFile, interviewId: string, updated: Partial<InterviewRound>): Promise<void> {
+		const today = this.getTodayDateString();
+		await this.app.fileManager.processFrontMatter(file, (fm) => {
+			if (Array.isArray(fm.interviews)) {
+				const idx = fm.interviews.findIndex((i: InterviewRound) => i.id === interviewId);
+				if (idx !== -1) {
+					fm.interviews[idx] = { ...fm.interviews[idx], ...updated };
+				}
+			}
+			fm.lastUpdated = today;
+		});
+		await this.syncNoteBodySections(file);
+		new Notice(`Updated interview round on ${file.basename}`);
+	}
+
+	/**
+	 * Deletes an interview round from frontmatter and note body.
+	 */
+	async deleteInterview(file: TFile, interviewId: string): Promise<void> {
+		const today = this.getTodayDateString();
+		await this.app.fileManager.processFrontMatter(file, (fm) => {
+			if (Array.isArray(fm.interviews)) {
+				fm.interviews = fm.interviews.filter((i: InterviewRound) => i.id !== interviewId);
+			}
+			fm.lastUpdated = today;
+		});
+		await this.syncNoteBodySections(file);
+		new Notice(`Removed interview round from ${file.basename}`);
+	}
 }
+

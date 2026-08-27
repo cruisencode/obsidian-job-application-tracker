@@ -25,8 +25,7 @@ export class LogInterviewOutcomeModal extends Modal {
 
 		if (!this.application) {
 			new SelectApplicationModal(this.app, this.plugin, (selectedApp) => {
-				this.application = selectedApp;
-				this.renderModal();
+				new LogInterviewOutcomeModal(this.app, this.plugin, selectedApp).open();
 			}).open();
 			this.close();
 			return;
@@ -136,7 +135,7 @@ export class LogInterviewOutcomeModal extends Modal {
 	async handleSubmit() {
 		if (!this.application || !this.selectedInterviewId) return;
 
-		const file = this.app.vault.getAbstractFileByPath(this.application.filePath);
+		const file = this.plugin.appService.resolveFile(this.application.filePath);
 		if (file instanceof TFile) {
 			await this.plugin.appService.updateInterviewOutcome(
 				file,

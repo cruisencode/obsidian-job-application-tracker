@@ -45,17 +45,7 @@ export class EditApplicationModal extends Modal {
 
 		if (!this.application) {
 			new SelectApplicationModal(this.app, this.plugin, (selectedApp) => {
-				this.application = selectedApp;
-				this.company = selectedApp.company;
-				this.role = selectedApp.role;
-				this.status = selectedApp.status;
-				this.dateApplied = selectedApp.dateApplied;
-				this.location = selectedApp.location || "";
-				this.salary = selectedApp.salary || "";
-				this.jobUrl = selectedApp.jobUrl || "";
-				this.source = selectedApp.source || "";
-				this.jobDescriptionFile = selectedApp.jobDescriptionFile || "";
-				this.renderModal();
+				new EditApplicationModal(this.app, this.plugin, selectedApp).open();
 			}).open();
 			this.close();
 			return;
@@ -231,7 +221,7 @@ export class EditApplicationModal extends Modal {
 			finalAttachmentPath = saved.path;
 		}
 
-		const file = this.app.vault.getAbstractFileByPath(this.application.filePath);
+		const file = this.plugin.appService.resolveFile(this.application.filePath);
 		if (file instanceof TFile) {
 			await this.plugin.appService.updateApplicationDetails(
 				file,

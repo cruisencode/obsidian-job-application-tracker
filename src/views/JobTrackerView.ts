@@ -15,6 +15,8 @@ import { UpdateStatusModal } from "../modals/UpdateStatusModal";
 import { AddContactModal } from "../modals/AddContactModal";
 import { AddInterviewModal } from "../modals/AddInterviewModal";
 import { EditApplicationModal } from "../modals/EditApplicationModal";
+import { ManageApplicationModal } from "../modals/ManageApplicationModal";
+import { ConfirmDeleteModal } from "../modals/ConfirmDeleteModal";
 
 export type TrackerViewMode = "kanban" | "table" | "list" | "metrics";
 
@@ -56,11 +58,27 @@ export class JobTrackerView extends ItemView {
 	}
 
 	async onOpen() {
-		// Register vault & cache change listeners to auto-refresh view
-		this.registerEvent(this.app.vault.on("create", () => this.debouncedRefresh()));
-		this.registerEvent(this.app.vault.on("delete", () => this.debouncedRefresh()));
-		this.registerEvent(this.app.vault.on("rename", () => this.debouncedRefresh()));
-		this.registerEvent(this.app.metadataCache.on("changed", () => this.debouncedRefresh()));
+		// Register vault & cache change listeners to auto-refresh view (filtered to markdown files)
+		this.registerEvent(
+			this.app.vault.on("create", (file) => {
+				if (file instanceof TFile && file.extension === "md") this.debouncedRefresh();
+			})
+		);
+		this.registerEvent(
+			this.app.vault.on("delete", (file) => {
+				if (file instanceof TFile && file.extension === "md") this.debouncedRefresh();
+			})
+		);
+		this.registerEvent(
+			this.app.vault.on("rename", (file) => {
+				if (file instanceof TFile && file.extension === "md") this.debouncedRefresh();
+			})
+		);
+		this.registerEvent(
+			this.app.metadataCache.on("changed", (file) => {
+				if (file instanceof TFile && file.extension === "md") this.debouncedRefresh();
+			})
+		);
 
 		await this.loadAndRender();
 	}
@@ -323,7 +341,7 @@ export class JobTrackerView extends ItemView {
 				column.removeClass("drag-over");
 				const filePath = e.dataTransfer?.getData("text/plain");
 				if (filePath) {
-					const file = this.app.vault.getAbstractFileByPath(filePath);
+					const file = this.plugin.appService.resolveFile(filePath);
 					if (file instanceof TFile) {
 						await this.plugin.appService.updateStatus(file, status);
 						this.loadAndRender();
@@ -385,7 +403,18 @@ export class JobTrackerView extends ItemView {
 			this.openNote(app.filePath);
 		};
 
-		const menuBtn = cardTop.createSpan({ cls: "job-tracker-card-menu-btn" });
+		const actionsGroup = cardTop.createDiv({ cls: "job-tracker-card-actions-group" });
+		const statusPill = actionsGroup.createSpan({
+			text: app.status,
+			cls: `job-tracker-status-badge status-${app.status.toLowerCase()}`,
+			attr: { "aria-label": "Click to change status" },
+		});
+		statusPill.onclick = (e) => {
+			e.stopPropagation();
+			new UpdateStatusModal(this.app, this.plugin, app).open();
+		};
+
+		const menuBtn = actionsGroup.createSpan({ cls: "job-tracker-card-menu-btn" });
 		setIcon(menuBtn, "more-vertical");
 		menuBtn.onclick = (e) => {
 			e.stopPropagation();
@@ -648,40 +677,53 @@ export class JobTrackerView extends ItemView {
 	/* ========================================================================= */
 
 	/**
-	 * Extracts the chronological sequence of statuses that the application entered/exited.
+	 * Extracts the chronological sequence of statuses that the application entered/exited,
+	 * eliminating internal loops (e.g. Interviewing -> Ghosted -> Interviewing resolves to Interviewing).
 	 */
 	getVisitedStatuses(app: JobApplication): string[] {
-		const visited: string[] = [];
+		const rawVisited: string[] = [];
 
 		// 1. Extract from statusHistory
 		if (app.statusHistory && app.statusHistory.length > 0) {
 			for (const entry of app.statusHistory) {
-				if (entry.status && (visited.length === 0 || visited[visited.length - 1] !== entry.status)) {
-					visited.push(entry.status);
+				if (entry.status && (rawVisited.length === 0 || rawVisited[rawVisited.length - 1] !== entry.status)) {
+					rawVisited.push(entry.status);
 				}
 			}
 		}
 
 		// 2. Ensure current status is at the end
-		if (app.status && (visited.length === 0 || visited[visited.length - 1] !== app.status)) {
-			visited.push(app.status);
+		if (app.status && (rawVisited.length === 0 || rawVisited[rawVisited.length - 1] !== app.status)) {
+			rawVisited.push(app.status);
 		}
 
 		// 3. Fallback: If application has interview records but "Interviewing" isn't in history
-		if (app.interviews && app.interviews.length > 0 && !visited.includes("Interviewing")) {
-			const last = visited[visited.length - 1];
+		if (app.interviews && app.interviews.length > 0 && !rawVisited.includes("Interviewing")) {
+			const last = rawVisited[rawVisited.length - 1];
 			if (["Offer", "Rejected", "Ghosted", "Withdrawn"].includes(last)) {
-				visited.splice(visited.length - 1, 0, "Interviewing");
+				rawVisited.splice(rawVisited.length - 1, 0, "Interviewing");
 			} else {
-				visited.push("Interviewing");
+				rawVisited.push("Interviewing");
 			}
 		}
 
 		// 4. Ensure "Applied" is in the chain if application was submitted beyond Wishlist
-		if (visited.length === 0) {
-			visited.push(app.status || "Applied");
-		} else if (visited[0] !== "Wishlist" && !visited.includes("Applied")) {
-			visited.unshift("Applied");
+		if (rawVisited.length === 0) {
+			rawVisited.push(app.status || "Applied");
+		} else if (rawVisited[0] !== "Wishlist" && !rawVisited.includes("Applied")) {
+			rawVisited.unshift("Applied");
+		}
+
+		// 5. Eliminate cycles / loops (e.g. Applied -> Interviewing -> Ghosted -> Interviewing => Applied -> Interviewing)
+		const visited: string[] = [];
+		for (const st of rawVisited) {
+			const existingIdx = visited.indexOf(st);
+			if (existingIdx !== -1) {
+				// Re-entered an earlier stage: truncate loop back to that stage
+				visited.length = existingIdx + 1;
+			} else {
+				visited.push(st);
+			}
 		}
 
 		return visited;
@@ -919,8 +961,26 @@ export class JobTrackerView extends ItemView {
 			return;
 		}
 
-		// Count transitions between nodes ensuring strict flow conservation
+		// Count transitions between nodes ensuring strict DAG property (no cycles)
 		const transitionMap = new Map<string, number>();
+
+		// Helper to detect if adding fromNode -> toNode creates a cycle (i.e. toNode can already reach fromNode)
+		const wouldCreateCycle = (fromNode: string, toNode: string): boolean => {
+			const visited = new Set<string>();
+			const queue = [toNode];
+			while (queue.length > 0) {
+				const current = queue.shift()!;
+				if (current === fromNode) return true;
+				visited.add(current);
+				for (const key of transitionMap.keys()) {
+					const [u, v] = key.split("|||");
+					if (u === current && !visited.has(v)) {
+						queue.push(v);
+					}
+				}
+			}
+			return false;
+		};
 
 		const addTransition = (fromNode: string, toNode: string, count = 1) => {
 			if (fromNode === toNode || count <= 0) return;
@@ -930,7 +990,17 @@ export class JobTrackerView extends ItemView {
 			if (!cleanFrom || !cleanTo || cleanFrom === cleanTo) return;
 
 			const key = `${cleanFrom}|||${cleanTo}`;
-			transitionMap.set(key, (transitionMap.get(key) || 0) + count);
+			if (transitionMap.has(key)) {
+				transitionMap.set(key, transitionMap.get(key)! + count);
+				return;
+			}
+
+			// If this new link would create a global cycle in Mermaid, reject it to avoid circular link crashes
+			if (wouldCreateCycle(cleanFrom, cleanTo)) {
+				return;
+			}
+
+			transitionMap.set(key, count);
 		};
 
 		// Track each application along the exact sequence of statuses it entered and exited
@@ -971,10 +1041,16 @@ export class JobTrackerView extends ItemView {
 			await MarkdownRenderer.render(this.app, mermaidCode, container, "", this);
 		} catch (err) {
 			console.error("Failed to render Mermaid Sankey diagram:", err);
-			container.createEl("p", {
-				text: "Unable to render Sankey diagram.",
-				cls: "text-muted",
-			});
+			container.empty();
+			const fallbackDiv = container.createDiv({ cls: "job-tracker-sankey-fallback" });
+			fallbackDiv.createEl("h5", { text: "Pipeline Flow Transitions" });
+			const flowList = fallbackDiv.createEl("ul");
+			for (const [key, count] of transitionMap.entries()) {
+				const [from, to] = key.split("|||");
+				flowList.createEl("li", {
+					text: `${from} ➔ ${to}: ${count} application(s)`,
+				});
+			}
 		}
 	}
 
@@ -986,6 +1062,13 @@ export class JobTrackerView extends ItemView {
 				.setTitle("Open Note")
 				.setIcon("file-text")
 				.onClick(() => this.openNote(app.filePath))
+		);
+
+		menu.addItem((item) =>
+			item
+				.setTitle("Manage Contacts & Interviews")
+				.setIcon("users")
+				.onClick(() => new ManageApplicationModal(this.app, this.plugin, app).open())
 		);
 
 		menu.addItem((item) =>
@@ -1035,14 +1118,44 @@ export class JobTrackerView extends ItemView {
 			);
 		}
 
+		menu.addSeparator();
+
+		menu.addItem((item) =>
+			item
+				.setTitle("Delete Application")
+				.setIcon("trash-2")
+				.setWarning(true)
+				.onClick(() => {
+					new ConfirmDeleteModal(
+						this.app,
+						`Delete ${app.company}?`,
+						`Are you sure you want to delete "${app.company} - ${app.role}"? This will move the application note to trash.`,
+						"Delete Application",
+						async () => {
+							const file = this.plugin.appService.resolveFile(app.filePath);
+							if (file instanceof TFile) {
+								await this.plugin.appService.deleteApplication(file);
+								this.loadAndRender();
+							}
+						}
+					).open();
+				})
+		);
+
 		menu.showAtMouseEvent(e);
 	}
 
 	async openNote(filePath: string) {
-		const file = this.app.vault.getAbstractFileByPath(filePath);
+		const file = this.plugin.appService.resolveFile(filePath);
 		if (file instanceof TFile) {
-			const leaf = this.app.workspace.getLeaf(false);
-			await leaf.openFile(file);
+			const activeLeaf = this.app.workspace.getActiveViewOfType(JobTrackerView);
+			if (activeLeaf && activeLeaf.leaf === this.leaf) {
+				const targetLeaf = this.app.workspace.getLeaf("tab");
+				await targetLeaf.openFile(file);
+			} else {
+				const leaf = this.app.workspace.getLeaf(false);
+				await leaf.openFile(file);
+			}
 		}
 	}
 }

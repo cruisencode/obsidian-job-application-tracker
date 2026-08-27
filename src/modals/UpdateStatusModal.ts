@@ -52,9 +52,7 @@ export class UpdateStatusModal extends Modal {
 		if (!this.application) {
 			// If no application passed in, let user select one first
 			new SelectApplicationModal(this.app, this.plugin, (selectedApp) => {
-				this.application = selectedApp;
-				this.newStatus = selectedApp.status;
-				this.renderModal();
+				new UpdateStatusModal(this.app, this.plugin, selectedApp).open();
 			}).open();
 			this.close();
 			return;
@@ -119,7 +117,7 @@ export class UpdateStatusModal extends Modal {
 	async handleSubmit() {
 		if (!this.application) return;
 
-		const file = this.app.vault.getAbstractFileByPath(this.application.filePath);
+		const file = this.plugin.appService.resolveFile(this.application.filePath);
 		if (file instanceof TFile) {
 			await this.plugin.appService.updateStatus(file, this.newStatus, this.note.trim());
 		}

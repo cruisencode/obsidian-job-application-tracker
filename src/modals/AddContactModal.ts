@@ -1,4 +1,4 @@
-import { App, Modal, Setting, TFile } from "obsidian";
+import { App, Modal, Notice, Setting, TFile } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { Contact, JobApplication } from "../types";
 import { SelectApplicationModal } from "./UpdateStatusModal";
@@ -28,8 +28,7 @@ export class AddContactModal extends Modal {
 
 		if (!this.application) {
 			new SelectApplicationModal(this.app, this.plugin, (selectedApp) => {
-				this.application = selectedApp;
-				this.renderModal();
+				new AddContactModal(this.app, this.plugin, selectedApp).open();
 			}).open();
 			this.close();
 			return;
@@ -148,14 +147,14 @@ export class AddContactModal extends Modal {
 	async handleSubmit() {
 		if (!this.application) return;
 		if (!this.name.trim()) {
-			alert("Please enter a contact name.");
+			new Notice("Please enter a contact name.");
 			return;
 		}
 
 		const resolvedRole = this.role === "Other" ? (this.customRole.trim() || "Other") : this.role;
 
 		const contact: Contact = {
-			id: Date.now().toString(),
+			id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
 			name: this.name.trim(),
 			role: resolvedRole,
 			email: this.email.trim() || undefined,
@@ -164,7 +163,7 @@ export class AddContactModal extends Modal {
 			notes: this.notes.trim() || undefined,
 		};
 
-		const file = this.app.vault.getAbstractFileByPath(this.application.filePath);
+		const file = this.plugin.appService.resolveFile(this.application.filePath);
 		if (file instanceof TFile) {
 			await this.plugin.appService.addContactToApplication(file, contact);
 		}

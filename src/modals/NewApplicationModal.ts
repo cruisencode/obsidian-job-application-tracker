@@ -1,4 +1,4 @@
-import { App, Modal, Setting } from "obsidian";
+import { App, Modal, Notice, Setting } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { Contact, JobStatus } from "../types";
 
@@ -204,7 +204,7 @@ export class NewApplicationModal extends Modal {
 		jobDescriptionText: string
 	) {
 		if (!this.company.trim() || !this.role.trim()) {
-			alert("Please enter both a company name and a role.");
+			new Notice("Please enter both a company name and a role.");
 			return;
 		}
 

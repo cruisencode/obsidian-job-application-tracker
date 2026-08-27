@@ -1,4 +1,4 @@
-import { App, Modal, Setting, TFile } from "obsidian";
+import { App, Modal, Notice, Setting, TFile } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { InterviewRound, InterviewRoundType, JobApplication } from "../types";
 import { SelectApplicationModal } from "./UpdateStatusModal";
@@ -41,8 +41,7 @@ export class AddInterviewModal extends Modal {
 
 		if (!this.application) {
 			new SelectApplicationModal(this.app, this.plugin, (selectedApp) => {
-				this.application = selectedApp;
-				this.renderModal();
+				new AddInterviewModal(this.app, this.plugin, selectedApp).open();
 			}).open();
 			this.close();
 			return;
@@ -158,12 +157,12 @@ export class AddInterviewModal extends Modal {
 	async handleSubmit() {
 		if (!this.application) return;
 		if (!this.roundName.trim()) {
-			alert("Please enter a round name.");
+			new Notice("Please enter a round name.");
 			return;
 		}
 
 		const interview: InterviewRound = {
-			id: Date.now().toString(),
+			id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
 			roundName: this.roundName.trim(),
 			roundType: this.roundType,
 			date: this.date.trim() || undefined,
@@ -172,7 +171,7 @@ export class AddInterviewModal extends Modal {
 			status: "Scheduled",
 		};
 
-		const file = this.app.vault.getAbstractFileByPath(this.application.filePath);
+		const file = this.plugin.appService.resolveFile(this.application.filePath);
 		if (file instanceof TFile) {
 			const result = await this.plugin.appService.addInterviewToApplication(
 				file,

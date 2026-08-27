@@ -3,6 +3,33 @@
 /* ========================================================================= */
 
 .job-tracker-view {
+	--job-status-wishlist: var(--color-base-70, #718096);
+	--job-status-applied: var(--color-blue, #3182ce);
+	--job-status-screening: var(--color-purple, #805ad5);
+	--job-status-interviewing: var(--color-orange, #dd6b20);
+	--job-status-offer: var(--color-green, #38a169);
+	--job-status-rejected: var(--color-red, #e53e3e);
+	--job-status-withdrawn: var(--color-base-60, #a0aec0);
+	--job-status-ghosted: var(--color-base-80, #4a5568);
+
+	--job-status-wishlist-bg: rgba(113, 128, 150, 0.15);
+	--job-status-applied-bg: rgba(49, 130, 206, 0.15);
+	--job-status-screening-bg: rgba(128, 90, 213, 0.15);
+	--job-status-interviewing-bg: rgba(221, 107, 32, 0.15);
+	--job-status-offer-bg: rgba(56, 161, 105, 0.15);
+	--job-status-rejected-bg: rgba(229, 62, 62, 0.15);
+	--job-status-withdrawn-bg: rgba(160, 174, 192, 0.15);
+	--job-status-ghosted-bg: rgba(74, 85, 104, 0.15);
+
+	--job-status-wishlist-border: rgba(113, 128, 150, 0.3);
+	--job-status-applied-border: rgba(49, 130, 206, 0.3);
+	--job-status-screening-border: rgba(128, 90, 213, 0.3);
+	--job-status-interviewing-border: rgba(221, 107, 32, 0.3);
+	--job-status-offer-border: rgba(56, 161, 105, 0.3);
+	--job-status-rejected-border: rgba(229, 62, 62, 0.3);
+	--job-status-withdrawn-border: rgba(160, 174, 192, 0.3);
+	--job-status-ghosted-border: rgba(74, 85, 104, 0.3);
+
 	display: flex;
 	flex-direction: column;
 	height: 100%;
@@ -208,58 +235,58 @@
 
 .status-wishlist,
 .job-tracker-status-badge.status-wishlist {
-	background-color: rgba(138, 143, 152, 0.15);
-	color: var(--text-muted);
-	border-color: rgba(138, 143, 152, 0.3);
+	background-color: var(--job-status-wishlist-bg);
+	color: var(--job-status-wishlist);
+	border-color: var(--job-status-wishlist-border);
 }
 
 .status-applied,
 .job-tracker-status-badge.status-applied {
-	background-color: rgba(66, 153, 225, 0.15);
-	color: #3182ce;
-	border-color: rgba(66, 153, 225, 0.3);
+	background-color: var(--job-status-applied-bg);
+	color: var(--job-status-applied);
+	border-color: var(--job-status-applied-border);
 }
 
 .status-screening,
 .job-tracker-status-badge.status-screening {
-	background-color: rgba(159, 122, 234, 0.15);
-	color: #805ad5;
-	border-color: rgba(159, 122, 234, 0.3);
+	background-color: var(--job-status-screening-bg);
+	color: var(--job-status-screening);
+	border-color: var(--job-status-screening-border);
 }
 
 .status-interviewing,
 .job-tracker-status-badge.status-interviewing {
-	background-color: rgba(236, 157, 50, 0.15);
-	color: #dd6b20;
-	border-color: rgba(236, 157, 50, 0.3);
+	background-color: var(--job-status-interviewing-bg);
+	color: var(--job-status-interviewing);
+	border-color: var(--job-status-interviewing-border);
 }
 
 .status-offer,
 .job-tracker-status-badge.status-offer {
-	background-color: rgba(72, 187, 120, 0.15);
-	color: #38a169;
-	border-color: rgba(72, 187, 120, 0.3);
+	background-color: var(--job-status-offer-bg);
+	color: var(--job-status-offer);
+	border-color: var(--job-status-offer-border);
 }
 
 .status-rejected,
 .job-tracker-status-badge.status-rejected {
-	background-color: rgba(245, 101, 101, 0.15);
-	color: #e53e3e;
-	border-color: rgba(245, 101, 101, 0.3);
+	background-color: var(--job-status-rejected-bg);
+	color: var(--job-status-rejected);
+	border-color: var(--job-status-rejected-border);
 }
 
 .status-withdrawn,
 .job-tracker-status-badge.status-withdrawn {
-	background-color: rgba(160, 174, 192, 0.15);
-	color: #718096;
-	border-color: rgba(160, 174, 192, 0.3);
+	background-color: var(--job-status-withdrawn-bg);
+	color: var(--job-status-withdrawn);
+	border-color: var(--job-status-withdrawn-border);
 }
 
 .status-ghosted,
 .job-tracker-status-badge.status-ghosted {
-	background-color: rgba(113, 128, 150, 0.15);
-	color: #4a5568;
-	border-color: rgba(113, 128, 150, 0.3);
+	background-color: var(--job-status-ghosted-bg);
+	color: var(--job-status-ghosted);
+	border-color: var(--job-status-ghosted-border);
 }
 
 /* ========================================================================= */
@@ -398,15 +425,24 @@
 	text-decoration: underline;
 }
 
+.job-tracker-card-actions-group {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
 .job-tracker-card-menu-btn {
 	cursor: pointer;
 	color: var(--text-muted);
 	display: flex;
 	align-items: center;
+	padding: 2px;
+	border-radius: 4px;
 }
 
 .job-tracker-card-menu-btn:hover {
 	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
 }
 
 .job-tracker-card-role {
@@ -804,14 +840,14 @@
 	transition: width 0.3s ease;
 }
 
-.job-tracker-progress-fill.status-wishlist { background-color: #718096; }
-.job-tracker-progress-fill.status-applied { background-color: #3182ce; }
-.job-tracker-progress-fill.status-screening { background-color: #805ad5; }
-.job-tracker-progress-fill.status-interviewing { background-color: #dd6b20; }
-.job-tracker-progress-fill.status-offer { background-color: #38a169; }
-.job-tracker-progress-fill.status-rejected { background-color: #e53e3e; }
-.job-tracker-progress-fill.status-withdrawn { background-color: #a0aec0; }
-.job-tracker-progress-fill.status-ghosted { background-color: #4a5568; }
+.job-tracker-progress-fill.status-wishlist { background-color: var(--job-status-wishlist); }
+.job-tracker-progress-fill.status-applied { background-color: var(--job-status-applied); }
+.job-tracker-progress-fill.status-screening { background-color: var(--job-status-screening); }
+.job-tracker-progress-fill.status-interviewing { background-color: var(--job-status-interviewing); }
+.job-tracker-progress-fill.status-offer { background-color: var(--job-status-offer); }
+.job-tracker-progress-fill.status-rejected { background-color: var(--job-status-rejected); }
+.job-tracker-progress-fill.status-withdrawn { background-color: var(--job-status-withdrawn); }
+.job-tracker-progress-fill.status-ghosted { background-color: var(--job-status-ghosted); }
 
 /* Source Table */
 .source-table th {
@@ -851,14 +887,14 @@
 	flex-shrink: 0;
 }
 
-.activity-dot.status-wishlist { background-color: #718096; }
-.activity-dot.status-applied { background-color: #3182ce; }
-.activity-dot.status-screening { background-color: #805ad5; }
-.activity-dot.status-interviewing { background-color: #dd6b20; }
-.activity-dot.status-offer { background-color: #38a169; }
-.activity-dot.status-rejected { background-color: #e53e3e; }
-.activity-dot.status-withdrawn { background-color: #a0aec0; }
-.activity-dot.status-ghosted { background-color: #4a5568; }
+.activity-dot.status-wishlist { background-color: var(--job-status-wishlist); }
+.activity-dot.status-applied { background-color: var(--job-status-applied); }
+.activity-dot.status-screening { background-color: var(--job-status-screening); }
+.activity-dot.status-interviewing { background-color: var(--job-status-interviewing); }
+.activity-dot.status-offer { background-color: var(--job-status-offer); }
+.activity-dot.status-rejected { background-color: var(--job-status-rejected); }
+.activity-dot.status-withdrawn { background-color: var(--job-status-withdrawn); }
+.activity-dot.status-ghosted { background-color: var(--job-status-ghosted); }
 
 .activity-text {
 	display: flex;
@@ -919,4 +955,59 @@
 	font-size: 0.85em;
 	line-height: 1.4;
 	width: 100%;
+}
+
+.job-tracker-modal-tab-content {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.job-tracker-modal-item-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	max-height: 380px;
+	overflow-y: auto;
+}
+
+/* Accessibility Focus States */
+.job-tracker-mode-btn:focus-visible,
+.job-tracker-icon-btn:focus-visible,
+.job-tracker-add-btn:focus-visible,
+.job-tracker-status-badge:focus-visible,
+.job-tracker-search-input:focus-visible,
+.job-tracker-filter-select:focus-visible,
+.job-tracker-action-btn:focus-visible,
+.job-tracker-action-pill-btn:focus-visible,
+.job-tracker-card-company:focus-visible,
+.company-link:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
+}
+
+/* Responsive Styles for narrow sidebars and mobile */
+@media (max-width: 600px) {
+	.job-tracker-header-top {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.job-tracker-header-actions {
+		width: 100%;
+		justify-content: space-between;
+	}
+
+	.job-tracker-filter-row {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.job-tracker-filter-select {
+		width: 100%;
+	}
+
+	.job-tracker-kanban-column {
+		min-width: 220px;
+	}
 }

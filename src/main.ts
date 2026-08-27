@@ -4,11 +4,13 @@ import { DEFAULT_SETTINGS, VIEW_TYPE_JOB_TRACKER } from "./constants";
 import { ApplicationService } from "./services/ApplicationService";
 import { JobApplicationTrackerSettingTab } from "./settings/SettingsTab";
 import { NewApplicationModal } from "./modals/NewApplicationModal";
-import { UpdateStatusModal } from "./modals/UpdateStatusModal";
+import { UpdateStatusModal, SelectApplicationModal } from "./modals/UpdateStatusModal";
 import { AddContactModal } from "./modals/AddContactModal";
 import { AddInterviewModal } from "./modals/AddInterviewModal";
 import { LogInterviewOutcomeModal } from "./modals/LogInterviewOutcomeModal";
 import { EditApplicationModal } from "./modals/EditApplicationModal";
+import { ManageApplicationModal } from "./modals/ManageApplicationModal";
+import { ConfirmDeleteModal } from "./modals/ConfirmDeleteModal";
 import { JobTrackerView } from "./views/JobTrackerView";
 
 export default class JobApplicationTrackerPlugin extends Plugin {
@@ -114,6 +116,55 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			callback: () => {
 				const activeApp = this.getActiveApplication();
 				new LogInterviewOutcomeModal(this.app, this, activeApp).open();
+			},
+		});
+
+		// Command: Manage application contacts & interviews
+		this.addCommand({
+			id: "manage-job-application",
+			name: "Manage application (Contacts, Interviews & Details)",
+			callback: () => {
+				const activeApp = this.getActiveApplication();
+				new ManageApplicationModal(this.app, this, activeApp).open();
+			},
+		});
+
+		// Command: Delete application
+		this.addCommand({
+			id: "delete-job-application",
+			name: "Delete application note",
+			callback: () => {
+				const activeApp = this.getActiveApplication();
+				if (!activeApp) {
+					new SelectApplicationModal(this.app, this, (selectedApp) => {
+						new ConfirmDeleteModal(
+							this.app,
+							`Delete ${selectedApp.company}?`,
+							`Are you sure you want to delete the application note for "${selectedApp.company} - ${selectedApp.role}"? This will move the file to trash.`,
+							"Delete Application",
+							async () => {
+								const file = this.appService.resolveFile(selectedApp.filePath);
+								if (file instanceof TFile) {
+									await this.appService.deleteApplication(file);
+								}
+							}
+						).open();
+					}).open();
+					return;
+				}
+
+				new ConfirmDeleteModal(
+					this.app,
+					`Delete ${activeApp.company}?`,
+					`Are you sure you want to delete the application note for "${activeApp.company} - ${activeApp.role}"? This will move the file to trash.`,
+					"Delete Application",
+					async () => {
+						const file = this.appService.resolveFile(activeApp.filePath);
+						if (file instanceof TFile) {
+							await this.appService.deleteApplication(file);
+						}
+					}
+				).open();
 			},
 		});
 
