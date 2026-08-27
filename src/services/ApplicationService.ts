@@ -193,7 +193,26 @@ export class ApplicationService {
 		const cache = this.app.metadataCache.getFileCache(file);
 		const frontmatter = cache?.frontmatter;
 
-		if (!frontmatter || (frontmatter.type !== "job-application" && !frontmatter.company)) {
+		if (!frontmatter) {
+			return null;
+		}
+
+		// Explicitly ignore interview prep notes and non-application types
+		if (frontmatter.type === "interview-prep" || frontmatter.type === "interview") {
+			return null;
+		}
+
+		// Check if file is in interview notes folder
+		const interviewFolder = normalizePath(this.plugin.settings.interviewNotesFolderPath);
+		if (file.path.startsWith(interviewFolder + "/") || file.path === interviewFolder) {
+			return null;
+		}
+
+		// Must either be explicitly marked type: job-application, or have company, role, and status
+		const isExplicitApp = frontmatter.type === "job-application";
+		const hasAppFields = frontmatter.company && (frontmatter.role || frontmatter.status);
+
+		if (!isExplicitApp && !hasAppFields) {
 			return null;
 		}
 
@@ -222,9 +241,15 @@ export class ApplicationService {
 		const files = this.app.vault.getMarkdownFiles();
 		const applications: JobApplication[] = [];
 		const folderPrefix = normalizePath(this.plugin.settings.trackerFolderPath);
+		const interviewFolderPrefix = normalizePath(this.plugin.settings.interviewNotesFolderPath);
 
 		for (const file of files) {
-			const isInFolder = file.path.startsWith(folderPrefix + "/") || file.path.startsWith(folderPrefix);
+			// Skip interview notes directory
+			if (file.path.startsWith(interviewFolderPrefix + "/") || file.path === interviewFolderPrefix) {
+				continue;
+			}
+
+			const isInFolder = file.path.startsWith(folderPrefix + "/") || file.path === folderPrefix;
 			const cache = this.app.metadataCache.getFileCache(file);
 			const isJobAppType = cache?.frontmatter?.type === "job-application";
 
