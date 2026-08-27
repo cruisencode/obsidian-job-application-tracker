@@ -938,46 +938,17 @@ export class JobTrackerView extends ItemView {
 			const source = app.source ? app.source : "Direct / Other";
 			const visited = this.getVisitedStatuses(app);
 
-			if (visited.length === 1) {
-				const only = visited[0];
-				if (only === "Wishlist") {
-					addTransition(source, "Wishlist", 1);
-				} else if (only === "Applied") {
-					addTransition(source, "Applied", 1);
-					addTransition("Applied", "Applied (Pending)", 1);
-				} else if (only === "Screening") {
-					addTransition(source, "Applied", 1);
-					addTransition("Applied", "Screening", 1);
-					addTransition("Screening", "Screening (In Progress)", 1);
-				} else if (only === "Interviewing") {
-					addTransition(source, "Applied", 1);
-					addTransition("Applied", "Interviewing", 1);
-					addTransition("Interviewing", "Interviewing (In Progress)", 1);
-				} else {
-					addTransition(source, "Applied", 1);
-					addTransition("Applied", only, 1);
-				}
-			} else {
-				// Connect Source to first stage
-				const firstStage = visited[0];
-				addTransition(source, firstStage, 1);
+			if (visited.length === 0) continue;
 
-				// Connect intermediate stage transitions
-				for (let i = 0; i < visited.length - 1; i++) {
-					const fromStage = visited[i];
-					const toStage = visited[i + 1];
-					addTransition(fromStage, toStage, 1);
-				}
+			// Connect Source to the first stage entered
+			const firstStage = visited[0];
+			addTransition(source, firstStage, 1);
 
-				// If terminal status is an active intermediate state, provide terminal sink
-				const terminal = visited[visited.length - 1];
-				if (terminal === "Applied") {
-					addTransition("Applied", "Applied (Pending)", 1);
-				} else if (terminal === "Screening") {
-					addTransition("Screening", "Screening (In Progress)", 1);
-				} else if (terminal === "Interviewing") {
-					addTransition("Interviewing", "Interviewing (In Progress)", 1);
-				}
+			// Connect all sequential stage transitions
+			for (let i = 0; i < visited.length - 1; i++) {
+				const fromStage = visited[i];
+				const toStage = visited[i + 1];
+				addTransition(fromStage, toStage, 1);
 			}
 		}
 
