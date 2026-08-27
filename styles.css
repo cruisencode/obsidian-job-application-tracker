@@ -1,5 +1,24 @@
 /* Job Application Tracker styles */
 
-.job-tracker-container {
-	padding: 16px;
+.job-tracker-modal {
+	padding: 8px 12px;
+}
+
+.job-tracker-modal h2 {
+	margin-top: 0;
+	margin-bottom: 4px;
+}
+
+.job-tracker-modal-subtitle {
+	color: var(--text-muted);
+	font-size: 0.9em;
+	margin-top: 0;
+	margin-bottom: 16px;
+}
+
+.job-tracker-template-textarea {
+	font-family: var(--font-monospace);
+	font-size: 0.85em;
+	line-height: 1.4;
+	width: 100%;
 }
