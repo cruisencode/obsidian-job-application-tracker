@@ -299,4 +299,188 @@ export class ApplicationService {
 			fm.lastUpdated = today;
 		});
 	}
+
+	/**
+	 * Add a contact to an application note and update the markdown body.
+	 */
+	async addContactToApplication(file: TFile, contact: Contact): Promise<void> {
+		const today = this.getTodayDateString();
+
+		await this.app.fileManager.processFrontMatter(file, (fm) => {
+			if (!Array.isArray(fm.contacts)) {
+				fm.contacts = [];
+			}
+			fm.contacts.push(contact);
+			fm.lastUpdated = today;
+		});
+
+		// Update ## 👥 Key Contacts section in body
+		const content = await this.app.vault.read(file);
+		const contactHeader = "## 👥 Key Contacts";
+		if (content.includes(contactHeader)) {
+			let contactLine = `- **${contact.name}** (${contact.role})`;
+			if (contact.email) contactLine += ` - [${contact.email}](mailto:${contact.email})`;
+			if (contact.phone) contactLine += ` - ${contact.phone}`;
+			if (contact.linkedin) contactLine += ` - [LinkedIn](${contact.linkedin})`;
+			if (contact.notes) contactLine += `\n  - *Notes:* ${contact.notes}`;
+
+			let updatedContent = content;
+			if (content.includes("*No contacts added yet.*")) {
+				updatedContent = content.replace("*No contacts added yet.*", contactLine);
+			} else {
+				updatedContent = content.replace(contactHeader, `${contactHeader}\n${contactLine}`);
+			}
+			await this.app.vault.modify(file, updatedContent);
+		}
+
+		new Notice(`Added contact ${contact.name} to ${file.basename}`);
+	}
+
+	/**
+	 * Creates an interview prep note based on the plugin template.
+	 */
+	async createInterviewPrepNote(
+		appData: JobApplication,
+		interview: InterviewRound
+	): Promise<TFile> {
+		const folderPath = this.plugin.settings.interviewNotesFolderPath;
+		await this.ensureFolder(folderPath);
+
+		const baseFileName = this.sanitizeFileName(
+			`${appData.company} - ${interview.roundName} - Prep`
+		);
+		let filePath = `${normalizePath(folderPath)}/${baseFileName}.md`;
+		let counter = 1;
+
+		while (this.app.vault.getAbstractFileByPath(filePath) != null) {
+			filePath = `${normalizePath(folderPath)}/${baseFileName} (${counter}).md`;
+			counter++;
+		}
+
+		const appFile = this.app.vault.getAbstractFileByPath(appData.filePath);
+		const appTitle = appFile instanceof TFile ? appFile.basename : `${appData.company} - ${appData.role}`;
+
+		let template = this.plugin.settings.interviewPrepTemplate || "";
+		template = template
+			.replace(/{{company}}/g, appData.company)
+			.replace(/{{role}}/g, appData.role)
+			.replace(/{{roundName}}/g, interview.roundName)
+			.replace(/{{date}}/g, interview.date || this.getTodayDateString())
+			.replace(/{{time}}/g, interview.time || "TBD")
+			.replace(/{{interviewers}}/g, interview.interviewers || "TBD")
+			.replace(/{{applicationNoteTitle}}/g, appTitle);
+
+		const prepFile = await this.app.vault.create(filePath, template);
+		new Notice(`Created interview prep note: ${prepFile.basename}`);
+		return prepFile;
+	}
+
+	/**
+	 * Add an interview round to an application note, generate prep note if requested, and update markdown.
+	 */
+	async addInterviewToApplication(
+		file: TFile,
+		interview: InterviewRound,
+		createPrepNote = true,
+		autoUpdateStatus = true
+	): Promise<{ interview: InterviewRound; prepFile?: TFile }> {
+		const appData = this.getApplicationFromCache(file);
+		let prepFile: TFile | undefined;
+
+		if (createPrepNote && appData) {
+			prepFile = await this.createInterviewPrepNote(appData, interview);
+			interview.prepNotePath = prepFile.path;
+		}
+
+		const today = this.getTodayDateString();
+
+		await this.app.fileManager.processFrontMatter(file, (fm) => {
+			if (!Array.isArray(fm.interviews)) {
+				fm.interviews = [];
+			}
+			fm.interviews.push(interview);
+			fm.lastUpdated = today;
+
+			// Optionally bump status to Interviewing if currently Wishlist or Applied or Screening
+			if (autoUpdateStatus && (fm.status === "Wishlist" || fm.status === "Applied" || fm.status === "Screening")) {
+				fm.status = "Interviewing";
+				if (!Array.isArray(fm.statusHistory)) fm.statusHistory = [];
+				fm.statusHistory.push({
+					status: "Interviewing",
+					date: today,
+					note: `Scheduled interview: ${interview.roundName}`,
+				});
+			}
+		});
+
+		// Update ## 📅 Interviews & Stages section in body
+		const content = await this.app.vault.read(file);
+		const interviewHeader = "## 📅 Interviews & Stages";
+		if (content.includes(interviewHeader)) {
+			const prepLink = interview.prepNotePath
+				? ` - [[${interview.prepNotePath}|Prep Note]]`
+				: "";
+			const interviewLine = `- **${interview.roundName}** (${interview.status}) - ${interview.date || "TBD"} ${interview.time || ""}${prepLink}`;
+
+			let updatedContent = content;
+			if (content.includes("*No interviews scheduled yet.*")) {
+				updatedContent = content.replace("*No interviews scheduled yet.*", interviewLine);
+			} else {
+				updatedContent = content.replace(interviewHeader, `${interviewHeader}\n${interviewLine}`);
+			}
+			await this.app.vault.modify(file, updatedContent);
+		}
+
+		new Notice(`Added ${interview.roundName} to ${file.basename}`);
+		return { interview, prepFile };
+	}
+
+	/**
+	 * Log interview outcome/debrief and update notes.
+	 */
+	async updateInterviewOutcome(
+		file: TFile,
+		interviewId: string,
+		status: "Completed" | "Cancelled",
+		outcomeNotes?: string,
+		newJobStatus?: JobStatus
+	): Promise<void> {
+		const today = this.getTodayDateString();
+
+		await this.app.fileManager.processFrontMatter(file, (fm) => {
+			if (Array.isArray(fm.interviews)) {
+				const iv = fm.interviews.find((i: InterviewRound) => i.id === interviewId);
+				if (iv) {
+					iv.status = status;
+					if (outcomeNotes) {
+						iv.outcomeNotes = outcomeNotes;
+					}
+				}
+			}
+
+			if (newJobStatus) {
+				fm.status = newJobStatus;
+				if (!Array.isArray(fm.statusHistory)) fm.statusHistory = [];
+				fm.statusHistory.push({
+					status: newJobStatus,
+					date: today,
+					note: outcomeNotes || `Interview ${status} -> Moved to ${newJobStatus}`,
+				});
+			}
+
+			fm.lastUpdated = today;
+		});
+
+		if (outcomeNotes) {
+			const content = await this.app.vault.read(file);
+			const logHeader = "## 📝 Notes & Activity Log";
+			if (content.includes(logHeader)) {
+				const insertion = `\n- **${today}** (Interview ${status}): ${outcomeNotes}`;
+				const updatedContent = content.replace(logHeader, `${logHeader}${insertion}`);
+				await this.app.vault.modify(file, updatedContent);
+			}
+		}
+
+		new Notice(`Logged outcome for interview on ${file.basename}`);
+	}
 }
