@@ -24,14 +24,15 @@ export interface SankeyNode {
 export class SankeyDiagram {
 	static getNodeColor(id: string): string {
 		const lower = id.toLowerCase();
-		if (lower === "offer") return "var(--color-green, #10b981)";
+		if (lower === "accepted") return "var(--color-green, #10b981)";
+		if (lower === "offer") return "var(--color-yellow, #f59e0b)";
 		if (lower === "interviewing") return "var(--color-blue, #3b82f6)";
 		if (lower === "screening") return "var(--color-cyan, #06b6d4)";
 		if (lower === "applied") return "var(--color-purple, #8b5cf6)";
 		if (lower === "wishlist") return "var(--color-slate, #94a3b8)";
 		if (lower === "rejected") return "var(--color-red, #ef4444)";
-		if (lower === "ghosted") return "var(--color-orange, #f59e0b)";
-		if (lower === "withdrawn") return "var(--color-yellow, #eab308)";
+		if (lower === "ghosted") return "var(--color-orange, #ea580c)";
+		if (lower === "withdrawn") return "var(--color-base-60, #94a3b8)";
 
 		// Source colors based on hash/palette
 		const sourcePalette = [

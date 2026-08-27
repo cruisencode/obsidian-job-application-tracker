@@ -677,8 +677,9 @@ export class JobTrackerView extends ItemView {
 	/* ========================================================================= */
 
 	/**
-	 * Extracts the chronological sequence of statuses that the application entered/exited,
-	 * eliminating internal loops (e.g. Interviewing -> Ghosted -> Interviewing resolves to Interviewing).
+	 * Extracts the chronological sequence of statuses that the application entered/exited.
+	 * Resolves final statuses (Accepted, Rejected, Withdrawn, Ghosted) so only the latest
+	 * current final status is kept at the end of the chain, preventing multiple final transitions.
 	 */
 	getVisitedStatuses(app: JobApplication): string[] {
 		const rawVisited: string[] = [];
@@ -700,7 +701,7 @@ export class JobTrackerView extends ItemView {
 		// 3. Fallback: If application has interview records but "Interviewing" isn't in history
 		if (app.interviews && app.interviews.length > 0 && !rawVisited.includes("Interviewing")) {
 			const last = rawVisited[rawVisited.length - 1];
-			if (["Offer", "Rejected", "Ghosted", "Withdrawn"].includes(last)) {
+			if (["Offer", "Accepted", "Rejected", "Ghosted", "Withdrawn"].includes(last)) {
 				rawVisited.splice(rawVisited.length - 1, 0, "Interviewing");
 			} else {
 				rawVisited.push("Interviewing");
@@ -726,6 +727,31 @@ export class JobTrackerView extends ItemView {
 			}
 		}
 
+		// 6. Enforce Single Final Status Rule:
+		// Final statuses (Accepted, Rejected, Withdrawn, Ghosted) are mutually exclusive endpoints.
+		// If multiple final statuses appear in history, keep only the latest final status at the end.
+		const finalStatuses = ["Accepted", "Rejected", "Withdrawn", "Ghosted"];
+		let lastFinalStatus: string | null = null;
+
+		for (let i = visited.length - 1; i >= 0; i--) {
+			if (finalStatuses.includes(visited[i])) {
+				lastFinalStatus = visited[i];
+				break;
+			}
+		}
+
+		if (lastFinalStatus) {
+			const filtered: string[] = [];
+			for (let i = 0; i < visited.length; i++) {
+				const s = visited[i];
+				if (!finalStatuses.includes(s)) {
+					filtered.push(s);
+				}
+			}
+			filtered.push(lastFinalStatus);
+			return filtered;
+		}
+
 		return visited;
 	}
 
@@ -747,8 +773,8 @@ export class JobTrackerView extends ItemView {
 		);
 		const appliedTotal = appliedApps.length;
 
-		// Active in-progress applications
-		const activeStatuses: JobStatus[] = ["Applied", "Screening", "Interviewing"];
+		// Active in-progress applications (excluding Wishlist, and final states Accepted, Rejected, Ghosted, Withdrawn)
+		const activeStatuses: JobStatus[] = ["Applied", "Screening", "Interviewing", "Offer"];
 		const activeApps = this.applications.filter((a) => activeStatuses.includes(a.status));
 
 		// Applications that reached screening
@@ -759,18 +785,23 @@ export class JobTrackerView extends ItemView {
 			(h) =>
 				h.visited.includes("Interviewing") ||
 				h.visited.includes("Offer") ||
+				h.visited.includes("Accepted") ||
 				(h.app.interviews && h.app.interviews.length > 0)
 		);
 
-		// Applications that reached offer stage
+		// Applications that reached offer or accepted stage
 		const offerApps = appliedApps.filter(
-			(h) => h.visited.includes("Offer") || h.app.status === "Offer"
+			(h) => h.visited.includes("Offer") || h.visited.includes("Accepted") || h.app.status === "Offer" || h.app.status === "Accepted"
 		);
 
-		// Responses received (progressed to Screening, Interviewing, Offer, or explicit Rejected)
+		const acceptedApps = appliedApps.filter(
+			(h) => h.visited.includes("Accepted") || h.app.status === "Accepted"
+		);
+
+		// Responses received (progressed to Screening, Interviewing, Offer, Accepted, or explicit Rejected)
 		const respondedApps = appliedApps.filter(
 			(h) =>
-				h.visited.some((st) => ["Screening", "Interviewing", "Offer", "Rejected"].includes(st)) ||
+				h.visited.some((st) => ["Screening", "Interviewing", "Offer", "Accepted", "Rejected"].includes(st)) ||
 				(h.app.interviews && h.app.interviews.length > 0)
 		);
 
@@ -789,10 +820,16 @@ export class JobTrackerView extends ItemView {
 		const kpiGrid = metricsContainer.createDiv({ cls: "job-tracker-kpi-grid" });
 
 		this.renderKpiCard(kpiGrid, "Total Applications", `${totalApps}`, "briefcase", `${appliedTotal} submitted, ${wishlistApps.length} wishlist`);
-		this.renderKpiCard(kpiGrid, "Active Pipeline", `${activeApps.length}`, "activity", "Applied, Screening & Interviewing");
+		this.renderKpiCard(kpiGrid, "Active Pipeline", `${activeApps.length}`, "activity", "In progress & active offers");
 		this.renderKpiCard(kpiGrid, "Response Rate", `${responseRate}%`, "mail", `${respondedApps.length} of ${appliedTotal} submitted`);
 		this.renderKpiCard(kpiGrid, "Interview Rate", `${interviewRate}%`, "calendar-check", `${interviewApps.length} of ${appliedTotal} submitted`);
-		this.renderKpiCard(kpiGrid, "Offer Rate", `${offerRate}%`, "award", `${offerApps.length} of ${appliedTotal} submitted`);
+		this.renderKpiCard(
+			kpiGrid,
+			"Offers / Accepted",
+			`${offerApps.length}`,
+			"award",
+			`${acceptedApps.length} offer(s) accepted`
+		);
 		this.renderKpiCard(kpiGrid, "Total Contacts", `${totalContacts}`, "users", "Recruiters & hiring managers");
 		this.renderKpiCard(
 			kpiGrid,

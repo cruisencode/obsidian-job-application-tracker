@@ -4,9 +4,17 @@ export type JobStatus =
 	| "Screening"
 	| "Interviewing"
 	| "Offer"
+	| "Accepted"
 	| "Rejected"
 	| "Withdrawn"
 	| "Ghosted";
+
+export const FINAL_STATUSES: readonly JobStatus[] = [
+	"Accepted",
+	"Rejected",
+	"Withdrawn",
+	"Ghosted",
+];
 
 export interface Contact {
 	id: string;

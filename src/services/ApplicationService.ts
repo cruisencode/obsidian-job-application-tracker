@@ -1,5 +1,5 @@
 import { App, Notice, TFile, TFolder, normalizePath, stringifyYaml } from "obsidian";
-import { Contact, InterviewRound, JobApplication, JobStatus, StatusHistoryEntry } from "../types";
+import { Contact, FINAL_STATUSES, InterviewRound, JobApplication, JobStatus, StatusHistoryEntry } from "../types";
 import JobApplicationTrackerPlugin from "../main";
 
 export class ApplicationService {
@@ -330,11 +330,27 @@ export class ApplicationService {
 		const today = this.getTodayDateString();
 
 		await this.app.fileManager.processFrontMatter(file, (fm) => {
+			const previousStatus = fm.status as JobStatus;
 			fm.status = newStatus;
 			fm.lastUpdated = today;
 
 			if (!Array.isArray(fm.statusHistory)) {
 				fm.statusHistory = [];
+			}
+
+			// If previous status was a final status and new status is also a final status,
+			// replace the previous final status entry instead of chaining multiple final statuses.
+			const isPrevFinal = FINAL_STATUSES.includes(previousStatus);
+			const isNewFinal = FINAL_STATUSES.includes(newStatus);
+
+			if (isPrevFinal && isNewFinal && fm.statusHistory.length > 0) {
+				const lastEntry = fm.statusHistory[fm.statusHistory.length - 1];
+				if (FINAL_STATUSES.includes(lastEntry.status)) {
+					lastEntry.status = newStatus;
+					lastEntry.date = today;
+					lastEntry.note = note || `Final status changed from ${previousStatus} to ${newStatus}`;
+					return;
+				}
 			}
 
 			fm.statusHistory.push({
@@ -346,14 +362,13 @@ export class ApplicationService {
 
 		// If a note was provided, append it to the Notes & Activity Log section in the markdown
 		if (note) {
-			await this.app.vault.process(file, (content) => {
-				const logHeader = "## 📝 Notes & Activity Log";
-				if (content.includes(logHeader)) {
-					const insertion = `\n- **${today}** (${newStatus}): ${note}`;
-					return content.replace(logHeader, `${logHeader}${insertion}`);
-				}
-				return content;
-			});
+			const content = await this.app.vault.read(file);
+			const logHeader = "## 📝 Notes & Activity Log";
+			if (content.includes(logHeader)) {
+				const insertion = `\n- **${today}** (${newStatus}): ${note}`;
+				const updatedContent = content.replace(logHeader, `${logHeader}${insertion}`);
+				await this.app.vault.modify(file, updatedContent);
+			}
 		}
 
 		new Notice(`Updated status to "${newStatus}" for ${file.basename}`);

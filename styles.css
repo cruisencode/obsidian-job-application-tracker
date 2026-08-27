@@ -7,7 +7,8 @@
 	--job-status-applied: var(--color-blue, #3182ce);
 	--job-status-screening: var(--color-purple, #805ad5);
 	--job-status-interviewing: var(--color-orange, #dd6b20);
-	--job-status-offer: var(--color-green, #38a169);
+	--job-status-offer: var(--color-yellow, #d69e2e);
+	--job-status-accepted: var(--color-green, #38a169);
 	--job-status-rejected: var(--color-red, #e53e3e);
 	--job-status-withdrawn: var(--color-base-60, #a0aec0);
 	--job-status-ghosted: var(--color-base-80, #4a5568);
@@ -16,7 +17,8 @@
 	--job-status-applied-bg: rgba(49, 130, 206, 0.15);
 	--job-status-screening-bg: rgba(128, 90, 213, 0.15);
 	--job-status-interviewing-bg: rgba(221, 107, 32, 0.15);
-	--job-status-offer-bg: rgba(56, 161, 105, 0.15);
+	--job-status-offer-bg: rgba(214, 158, 46, 0.15);
+	--job-status-accepted-bg: rgba(56, 161, 105, 0.15);
 	--job-status-rejected-bg: rgba(229, 62, 62, 0.15);
 	--job-status-withdrawn-bg: rgba(160, 174, 192, 0.15);
 	--job-status-ghosted-bg: rgba(74, 85, 104, 0.15);
@@ -25,7 +27,8 @@
 	--job-status-applied-border: rgba(49, 130, 206, 0.3);
 	--job-status-screening-border: rgba(128, 90, 213, 0.3);
 	--job-status-interviewing-border: rgba(221, 107, 32, 0.3);
-	--job-status-offer-border: rgba(56, 161, 105, 0.3);
+	--job-status-offer-border: rgba(214, 158, 46, 0.3);
+	--job-status-accepted-border: rgba(56, 161, 105, 0.3);
 	--job-status-rejected-border: rgba(229, 62, 62, 0.3);
 	--job-status-withdrawn-border: rgba(160, 174, 192, 0.3);
 	--job-status-ghosted-border: rgba(74, 85, 104, 0.3);
@@ -266,6 +269,14 @@
 	background-color: var(--job-status-offer-bg);
 	color: var(--job-status-offer);
 	border-color: var(--job-status-offer-border);
+}
+
+.status-accepted,
+.job-tracker-status-badge.status-accepted {
+	background-color: var(--job-status-accepted-bg);
+	color: var(--job-status-accepted);
+	border-color: var(--job-status-accepted-border);
+	font-weight: 600;
 }
 
 .status-rejected,

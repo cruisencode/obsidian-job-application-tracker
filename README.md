@@ -10,7 +10,7 @@ An all-in-one job search management plugin for [Obsidian](https://obsidian.md). 
 ## ✨ Features
 
 ### 📊 Visual Dashboard with 4 View Modes
-- **Kanban Board**: Drag-and-drop cards across pipeline stage columns (*Wishlist* ➔ *Applied* ➔ *Screening* ➔ *Interviewing* ➔ *Offer* / *Rejected* / *Withdrawn* / *Ghosted*). Moving cards instantly updates note frontmatter and logs timestamped status activity.
+- **Kanban Board**: Drag-and-drop cards across pipeline stage columns (*Wishlist* ➔ *Applied* ➔ *Screening* ➔ *Interviewing* ➔ *Offer* ➔ *Accepted* / *Rejected* / *Withdrawn* / *Ghosted*). Moving cards instantly updates note frontmatter and logs timestamped status activity.
 - **Table View**: Sortable columns (Company, Role, Status, Applied Date, Location, Salary, Source), clickable status badges, and quick action menus.
 - **List View**: Compact card layout highlighting next scheduled interviews and key details.
 - **Metrics & Conversion Analytics**:

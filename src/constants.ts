@@ -8,6 +8,7 @@ export const DEFAULT_STATUSES: JobStatus[] = [
 	"Screening",
 	"Interviewing",
 	"Offer",
+	"Accepted",
 	"Rejected",
 	"Withdrawn",
 	"Ghosted",
