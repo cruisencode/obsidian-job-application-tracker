@@ -131,7 +131,9 @@ export class ApplicationService {
 
 		body += `## 📄 Job Description\n`;
 		if (appData.jobDescriptionFile) {
-			body += `![[${appData.jobDescriptionFile}]]\n\n`;
+			const isPdf = appData.jobDescriptionFile.toLowerCase().endsWith(".pdf");
+			const title = isPdf ? "Job Description (PDF)" : "Job Description (Markdown)";
+			body += `> [!abstract]- 📎 ${title}\n> ![[${appData.jobDescriptionFile}]]\n\n`;
 		}
 		if (appData.jobDescription) {
 			body += `${appData.jobDescription}\n`;
@@ -368,7 +370,9 @@ export class ApplicationService {
 			if (content.includes(jdHeader)) {
 				let newJdContent = `${jdHeader}\n`;
 				if (fields.jobDescriptionFile) {
-					newJdContent += `![[${fields.jobDescriptionFile}]]\n\n`;
+					const isPdf = fields.jobDescriptionFile.toLowerCase().endsWith(".pdf");
+					const title = isPdf ? "Job Description (PDF)" : "Job Description (Markdown)";
+					newJdContent += `> [!abstract]- 📎 ${title}\n> ![[${fields.jobDescriptionFile}]]\n\n`;
 				}
 				if (newJobDescriptionText) {
 					newJdContent += `${newJobDescriptionText}\n`;
