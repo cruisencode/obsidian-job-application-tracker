@@ -306,26 +306,42 @@ export class ApplicationService {
 	 * Get all job applications in the vault.
 	 */
 	async getAllApplications(): Promise<JobApplication[]> {
-		const files = this.app.vault.getMarkdownFiles();
 		const applications: JobApplication[] = [];
 		const folderPrefix = normalizePath(this.plugin.settings.trackerFolderPath);
 		const interviewFolderPrefix = normalizePath(this.plugin.settings.interviewNotesFolderPath);
+		const processedPaths = new Set<string>();
 
-		for (const file of files) {
-			// Skip interview notes directory
-			if (file.path.startsWith(interviewFolderPrefix + "/") || file.path === interviewFolderPrefix) {
-				continue;
-			}
-
-			const isInFolder = file.path.startsWith(folderPrefix + "/") || file.path === folderPrefix;
-			const cache = this.app.metadataCache.getFileCache(file);
-			const isJobAppType = cache?.frontmatter?.type === "job-application";
-
-			if (isInFolder || isJobAppType) {
-				const appData = this.getApplicationFromCache(file);
-				if (appData) {
-					applications.push(appData);
+		// 1. Direct scan of configured application folder
+		const trackerAbstract = this.app.vault.getAbstractFileByPath(folderPrefix);
+		if (trackerAbstract instanceof TFolder) {
+			const collectFromFolder = (folder: TFolder) => {
+				for (const child of folder.children) {
+					if (child instanceof TFile && child.extension === "md") {
+						if (!child.path.startsWith(interviewFolderPrefix + "/") && child.path !== interviewFolderPrefix) {
+							processedPaths.add(child.path);
+							const appData = this.getApplicationFromCache(child);
+							if (appData) applications.push(appData);
+						}
+					} else if (child instanceof TFolder) {
+						if (!child.path.startsWith(interviewFolderPrefix + "/") && child.path !== interviewFolderPrefix) {
+							collectFromFolder(child);
+						}
+					}
 				}
+			};
+			collectFromFolder(trackerAbstract);
+		}
+
+		// 2. Scan remaining vault files that explicitly declare type: job-application in frontmatter
+		const files = this.app.vault.getMarkdownFiles();
+		for (const file of files) {
+			if (processedPaths.has(file.path)) continue;
+			if (file.path.startsWith(interviewFolderPrefix + "/") || file.path === interviewFolderPrefix) continue;
+
+			const cache = this.app.metadataCache.getFileCache(file);
+			if (cache?.frontmatter?.type === "job-application") {
+				const appData = this.getApplicationFromCache(file);
+				if (appData) applications.push(appData);
 			}
 		}
 

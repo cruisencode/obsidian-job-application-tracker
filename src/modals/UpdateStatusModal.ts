@@ -7,14 +7,23 @@ export class SelectApplicationModal extends FuzzySuggestModal<JobApplication> {
 	applications: JobApplication[];
 	onSelect: (app: JobApplication) => void;
 
-	constructor(app: App, plugin: JobApplicationTrackerPlugin, onSelect: (app: JobApplication) => void) {
+	constructor(
+		app: App,
+		plugin: JobApplicationTrackerPlugin,
+		onSelect: (app: JobApplication) => void,
+		applications?: JobApplication[]
+	) {
 		super(app);
 		this.plugin = plugin;
 		this.onSelect = onSelect;
+		this.applications = applications || [];
+		this.setPlaceholder("Type to search application by company or role...");
 	}
 
 	async onOpen() {
-		this.applications = await this.plugin.appService.getAllApplications();
+		if (this.applications.length === 0) {
+			this.applications = await this.plugin.appService.getAllApplications();
+		}
 		super.onOpen();
 	}
 

@@ -215,7 +215,17 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 	onunload() {}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data = await this.loadData();
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+		if (!Array.isArray(this.settings.statuses) || this.settings.statuses.length === 0) {
+			this.settings.statuses = [...DEFAULT_SETTINGS.statuses];
+		}
+		if (!Array.isArray(this.settings.defaultSourceOptions) || this.settings.defaultSourceOptions.length === 0) {
+			this.settings.defaultSourceOptions = [...DEFAULT_SETTINGS.defaultSourceOptions];
+		}
+		if (!this.settings.interviewPrepTemplate) {
+			this.settings.interviewPrepTemplate = DEFAULT_SETTINGS.interviewPrepTemplate;
+		}
 	}
 
 	async saveSettings() {

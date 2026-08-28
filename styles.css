@@ -13,26 +13,27 @@
 	--job-status-withdrawn: var(--color-base-60, #a0aec0);
 	--job-status-ghosted: var(--color-base-80, #4a5568);
 
-	--job-status-wishlist-bg: rgba(113, 128, 150, 0.15);
-	--job-status-applied-bg: rgba(49, 130, 206, 0.15);
-	--job-status-screening-bg: rgba(128, 90, 213, 0.15);
-	--job-status-interviewing-bg: rgba(221, 107, 32, 0.15);
-	--job-status-offer-bg: rgba(214, 158, 46, 0.15);
-	--job-status-accepted-bg: rgba(56, 161, 105, 0.15);
-	--job-status-rejected-bg: rgba(229, 62, 62, 0.15);
-	--job-status-withdrawn-bg: rgba(160, 174, 192, 0.15);
-	--job-status-ghosted-bg: rgba(74, 85, 104, 0.15);
+	--job-status-wishlist-bg: color-mix(in srgb, var(--job-status-wishlist) 15%, transparent);
+	--job-status-applied-bg: color-mix(in srgb, var(--job-status-applied) 15%, transparent);
+	--job-status-screening-bg: color-mix(in srgb, var(--job-status-screening) 15%, transparent);
+	--job-status-interviewing-bg: color-mix(in srgb, var(--job-status-interviewing) 15%, transparent);
+	--job-status-offer-bg: color-mix(in srgb, var(--job-status-offer) 15%, transparent);
+	--job-status-accepted-bg: color-mix(in srgb, var(--job-status-accepted) 15%, transparent);
+	--job-status-rejected-bg: color-mix(in srgb, var(--job-status-rejected) 15%, transparent);
+	--job-status-withdrawn-bg: color-mix(in srgb, var(--job-status-withdrawn) 15%, transparent);
+	--job-status-ghosted-bg: color-mix(in srgb, var(--job-status-ghosted) 15%, transparent);
 
-	--job-status-wishlist-border: rgba(113, 128, 150, 0.3);
-	--job-status-applied-border: rgba(49, 130, 206, 0.3);
-	--job-status-screening-border: rgba(128, 90, 213, 0.3);
-	--job-status-interviewing-border: rgba(221, 107, 32, 0.3);
-	--job-status-offer-border: rgba(214, 158, 46, 0.3);
-	--job-status-accepted-border: rgba(56, 161, 105, 0.3);
-	--job-status-rejected-border: rgba(229, 62, 62, 0.3);
-	--job-status-withdrawn-border: rgba(160, 174, 192, 0.3);
-	--job-status-ghosted-border: rgba(74, 85, 104, 0.3);
+	--job-status-wishlist-border: color-mix(in srgb, var(--job-status-wishlist) 30%, transparent);
+	--job-status-applied-border: color-mix(in srgb, var(--job-status-applied) 30%, transparent);
+	--job-status-screening-border: color-mix(in srgb, var(--job-status-screening) 30%, transparent);
+	--job-status-interviewing-border: color-mix(in srgb, var(--job-status-interviewing) 30%, transparent);
+	--job-status-offer-border: color-mix(in srgb, var(--job-status-offer) 30%, transparent);
+	--job-status-accepted-border: color-mix(in srgb, var(--job-status-accepted) 30%, transparent);
+	--job-status-rejected-border: color-mix(in srgb, var(--job-status-rejected) 30%, transparent);
+	--job-status-withdrawn-border: color-mix(in srgb, var(--job-status-withdrawn) 30%, transparent);
+	--job-status-ghosted-border: color-mix(in srgb, var(--job-status-ghosted) 30%, transparent);
 
+	container-type: inline-size;
 	display: flex;
 	flex-direction: column;
 	height: 100%;
@@ -162,10 +163,10 @@
 	pointer-events: none;
 }
 
-.job-tracker-search-input {
+.job-tracker-search-wrapper input.job-tracker-search-input {
 	width: 100%;
-	padding-left: 28px !important;
-	padding-right: 28px !important;
+	padding-left: 28px;
+	padding-right: 28px;
 	font-size: 0.85em;
 	height: 32px;
 	border-radius: 6px;
@@ -1030,7 +1031,32 @@
 	outline-offset: 2px;
 }
 
-/* Responsive Styles for narrow sidebars and mobile */
+/* Responsive Styles for narrow sidebars, container queries, and mobile */
+@container (max-width: 600px) {
+	.job-tracker-header-top {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.job-tracker-header-actions {
+		width: 100%;
+		justify-content: space-between;
+	}
+
+	.job-tracker-filter-row {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.job-tracker-filter-select {
+		width: 100%;
+	}
+
+	.job-tracker-kanban-column {
+		min-width: 220px;
+	}
+}
+
 @media (max-width: 600px) {
 	.job-tracker-header-top {
 		flex-direction: column;
