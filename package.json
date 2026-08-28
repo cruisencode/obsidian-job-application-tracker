@@ -1,6 +1,6 @@
 {
   "name": "obsidian-job-application-tracker",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Track job applications, contacts, and interviews with Kanban, Table, List, and Sankey analytics dashboards.",
   "main": "main.js",
   "scripts": {

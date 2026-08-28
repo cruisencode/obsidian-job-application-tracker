@@ -334,22 +334,20 @@ export class ApplicationService {
 	}
 
 	/**
-	 * Get all job applications in the vault.
+	 * Get all job applications in the configured tracker folder.
 	 */
 	getAllApplications(): JobApplication[] {
 		const applications: JobApplication[] = [];
 		const folderPrefix = normalizePath(this.plugin.settings.trackerFolderPath);
 		const interviewFolderPrefix = normalizePath(this.plugin.settings.interviewNotesFolderPath);
-		const processedPaths = new Set<string>();
 
-		// 1. Direct scan of configured application folder
+		// Direct scan of configured application folder
 		const trackerAbstract = this.app.vault.getAbstractFileByPath(folderPrefix);
 		if (trackerAbstract instanceof TFolder) {
 			const collectFromFolder = (folder: TFolder) => {
 				for (const child of folder.children) {
 					if (child instanceof TFile && child.extension === "md") {
 						if (!child.path.startsWith(interviewFolderPrefix + "/") && child.path !== interviewFolderPrefix) {
-							processedPaths.add(child.path);
 							const appData = this.getApplicationFromCache(child);
 							if (appData) applications.push(appData);
 						}
@@ -361,20 +359,6 @@ export class ApplicationService {
 				}
 			};
 			collectFromFolder(trackerAbstract);
-		}
-
-		// 2. Scan remaining vault files that explicitly declare type: job-application in frontmatter
-		// Uses in-memory metadataCache for zero-IO performance while allowing custom note locations
-		const files = this.app.vault.getMarkdownFiles();
-		for (const file of files) {
-			if (processedPaths.has(file.path)) continue;
-			if (file.path.startsWith(interviewFolderPrefix + "/") || file.path === interviewFolderPrefix) continue;
-
-			const cache = this.app.metadataCache.getFileCache(file);
-			if (cache?.frontmatter?.type === "job-application") {
-				const appData = this.getApplicationFromCache(file);
-				if (appData) applications.push(appData);
-			}
 		}
 
 		// Sort by last updated / date applied descending
