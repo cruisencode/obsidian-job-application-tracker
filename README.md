@@ -54,8 +54,13 @@ An all-in-one job search management plugin for [Obsidian](https://obsidian.md). 
 - **Interview Debrief Modal**: Log interview outcomes (`Completed` or `Cancelled`), record debrief notes, and advance the application stage.
 
 ### 🔍 Live Search & Filtering
-- Search across company names, roles, locations, sources, compensation, and contact names with instant results.
+- Search across company names, roles, locations, sources, compensation, and contact names with instant, debounced results.
 - Filter by specific application stages.
+
+### ♿ Accessibility & Mobile Support
+- **Full Keyboard Navigation**: Navigate view switcher tabs, Kanban cards, sortable Table headers, and status badges with <kbd>Tab</kbd>, <kbd>Enter</kbd>, and <kbd>Space</kbd>.
+- **ARIA Standards**: Complete ARIA roles, `aria-selected`, and `aria-sort` indicators across all views.
+- **Sidebar & Mobile Responsive**: Uses CSS Container Queries to seamlessly adapt layout when docked in sidebars or on mobile screens.
 
 ---
 
@@ -92,6 +97,8 @@ Open the Obsidian Command Palette (<kbd>Cmd</kbd> + <kbd>P</kbd> or <kbd>Ctrl</k
 | `Job Application Tracker: Add contact to application` | Add recruiter/hiring manager info to an application |
 | `Job Application Tracker: Add interview to application` | Schedule an interview round & create prep note |
 | `Job Application Tracker: Log interview outcome / debrief` | Record debrief feedback and advance stage |
+| `Job Application Tracker: Manage application (Contacts, Interviews & Details)` | Comprehensive overview & management modal |
+| `Job Application Tracker: Delete application note` | Safely delete an application note and move to trash |
 
 *Tip: When viewing any job application note, running these commands automatically pre-selects the active application.*
 
