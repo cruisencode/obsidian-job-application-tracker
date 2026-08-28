@@ -284,11 +284,13 @@ export class ApplicationService {
 	 */
 	getApplicationFromCache(file: TFile): JobApplication | null {
 		const cache = this.app.metadataCache.getFileCache(file);
-		const frontmatter = cache?.frontmatter;
+		const rawFrontmatter = cache?.frontmatter;
 
-		if (!frontmatter) {
+		if (!rawFrontmatter) {
 			return null;
 		}
+
+		const frontmatter = rawFrontmatter as unknown as JobApplicationFrontMatter;
 
 		// Explicitly ignore interview prep notes and non-application types
 		if (frontmatter.type === "interview-prep" || frontmatter.type === "interview") {

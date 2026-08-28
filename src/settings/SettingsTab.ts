@@ -1,4 +1,4 @@
-import { App, normalizePath, PluginSettingTab, Setting } from "obsidian";
+import { App, normalizePath, PluginSettingTab, Setting, TextAreaComponent } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { JobStatus } from "../types";
 import { DEFAULT_INTERVIEW_PREP_TEMPLATE, DEFAULT_SETTINGS } from "../constants";
@@ -142,10 +142,12 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 			templateDesc.createEl("code", { text: "{{applicationNoteTitle}}" })
 		);
 
+		let templateTextArea: TextAreaComponent | null = null;
 		new Setting(containerEl)
 			.setName("Template Content")
 			.setDesc(templateDesc)
 			.addTextArea((textArea) => {
+				templateTextArea = textArea;
 				textArea
 					.setValue(this.plugin.settings.interviewPrepTemplate)
 					.onChange(async (value) => {
@@ -161,7 +163,9 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 					.onClick(async () => {
 						this.plugin.settings.interviewPrepTemplate = DEFAULT_INTERVIEW_PREP_TEMPLATE;
 						await this.plugin.saveSettings();
-						this.display();
+						if (templateTextArea) {
+							templateTextArea.setValue(DEFAULT_INTERVIEW_PREP_TEMPLATE);
+						}
 					});
 			});
 	}

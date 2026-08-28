@@ -151,7 +151,7 @@ export class ManageApplicationModal extends Modal {
 			.addButton((btn) =>
 				btn
 					.setButtonText("Delete Application")
-					.setDestructive()
+					.setClass("mod-warning")
 					.onClick(() => {
 						new ConfirmDeleteModal(
 							this.app,
