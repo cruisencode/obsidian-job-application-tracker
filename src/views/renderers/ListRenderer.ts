@@ -63,9 +63,11 @@ export class ListRenderer {
 			// Details row
 			const detailsRow = mainInfo.createDiv({ cls: "job-tracker-list-details" });
 			if (app.location) detailsRow.createSpan({ text: `📍 ${app.location}` });
+			if (app.workplaceType) detailsRow.createSpan({ text: `🏢 ${app.workplaceType}` });
 			if (app.salary) detailsRow.createSpan({ text: `💰 ${app.salary}` });
 			if (app.source) detailsRow.createSpan({ text: `🔗 ${app.source}` });
 			if (app.dateApplied) detailsRow.createSpan({ text: `📅 Applied: ${app.dateApplied}` });
+			if (app.followUpDate) detailsRow.createSpan({ text: `🔔 Follow-up: ${app.followUpDate}`, cls: "job-tracker-list-highlight" });
 			if (app.jobDescriptionFile) {
 				const isPdf = app.jobDescriptionFile.toLowerCase().endsWith(".pdf");
 				const jdPill = detailsRow.createSpan({

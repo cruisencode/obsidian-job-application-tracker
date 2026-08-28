@@ -41,48 +41,69 @@ date: "{{date}}"
 
 ---
 
-## 🏢 Company & Role Research
-- **What they do:** 
-- **Recent news / developments:** 
-- **Key tech stack & tools:** 
-- **Why this role is open / team mission:** 
+## 🏢 Company Intelligence & Team Context
+- **Business Model / Mission:** 
+- **Recent Product Launches & News:** 
+- **Tech Stack & Engineering Architecture:** 
+- **Team Scope & Why This Role is Open:** 
 
 ---
 
-## 🎯 Role Requirements & Alignment
-- **Requirement 1:** *How my experience aligns...*
-- **Requirement 2:** *How my experience aligns...*
-- **Requirement 3:** *How my experience aligns...*
+## 🎯 Key Strengths & Role Alignment
+- **Must-Have Requirement 1:** *How my background directly aligns...*
+- **Must-Have Requirement 2:** *How my background directly aligns...*
+- **Domain Expertise & Impact:** *Relevant past wins...*
 
 ---
 
-## 💡 STAR Stories & Behavioral Prep
-### 1. Challenge / Conflict Resolution
+## 💡 STAR Stories & Key Scenarios
+### 1. Complex Technical / Cross-functional Challenge
 - **Situation:** 
 - **Task:** 
 - **Action:** 
-- **Result:** 
+- **Result & Metric:** 
 
-### 2. High Impact Project
+### 2. High-Impact Delivery / Innovation Win
 - **Situation:** 
 - **Task:** 
 - **Action:** 
-- **Result:** 
+- **Result & Metric:** 
 
 ---
 
-## ❓ Questions to Ask the Interviewer
-1. What does success look like in the first 90 days for this role?
-2. What are the biggest technical or organizational challenges currently facing the team?
-3. How would you describe the team's engineering / work culture?
-4. What are the next steps in the interview process?
+## 🛠️ Technical & Architecture Focus Areas
+- **Core Topics to Review:** 
+- **Potential Deep-Dive Scenarios:** 
+- **Key Concepts / Code Examples:** 
 
 ---
 
-## 📝 Post-Interview Notes & Reflection
-- **How it went:** 
-- **Questions asked:** 
-- **Key takeaways / follow-up action items:** 
+## 💰 Compensation & Target Range
+- **Target Base / Total Comp:** 
+- **Notes on Benefits & Equity:** 
+
+---
+
+## ❓ Tailored Questions for the Interviewer
+### For Hiring Manager / Engineering Lead:
+1. What does outstanding success look like in the first 90 days for this position?
+2. What are the highest-priority architectural or product roadblocks currently facing the team?
+3. How do you measure impact and growth within this group?
+
+### For Peer Engineers / Teammates:
+1. What does your day-to-day deployment and collaboration workflow look like?
+2. What is the most exciting technical problem the team solved recently?
+
+### For Recruiter / Talent Team:
+1. What does the remainder of the evaluation pipeline and timeline look like?
+
+---
+
+## 📝 Post-Interview Debrief & Action Items
+- **Overall Impressions & Sentiment:** 
+- **What Went Well:** 
+- **Areas to Improve / Follow Up On:** 
+- **Follow-up / Thank You Sent:** [ ] Yes  [ ] No
 `;
 
 export const DEFAULT_SETTINGS: JobApplicationTrackerSettings = {

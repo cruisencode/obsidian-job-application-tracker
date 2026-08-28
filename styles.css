@@ -504,6 +504,17 @@
 	text-decoration: underline;
 }
 
+.job-tracker-badge.job-tracker-badge-workplace {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.job-tracker-badge.job-tracker-badge-followup {
+	background-color: rgba(237, 137, 54, 0.12);
+	color: var(--text-warning, #dd6b20);
+	border: 1px solid rgba(237, 137, 54, 0.25);
+}
+
 .job-tracker-clickable {
 	cursor: pointer;
 }

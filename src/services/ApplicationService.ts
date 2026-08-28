@@ -1,5 +1,5 @@
 import { App, Notice, TFile, TFolder, normalizePath, stringifyYaml } from "obsidian";
-import { Contact, FINAL_STATUSES, InterviewRound, JobApplication, JobStatus, StatusHistoryEntry } from "../types";
+import { Contact, EmploymentType, FINAL_STATUSES, InterviewRound, JobApplication, JobStatus, StatusHistoryEntry, WorkplaceType } from "../types";
 import JobApplicationTrackerPlugin from "../main";
 
 export class ApplicationService {
@@ -142,7 +142,10 @@ export class ApplicationService {
 		body += `## 📋 Overview\n`;
 		if (appData.salary) body += `- **Salary / Comp:** ${appData.salary}\n`;
 		if (appData.location) body += `- **Location:** ${appData.location}\n`;
+		if (appData.workplaceType) body += `- **Workplace Model:** ${appData.workplaceType}\n`;
+		if (appData.employmentType) body += `- **Employment Type:** ${appData.employmentType}\n`;
 		if (appData.source) body += `- **Source:** ${appData.source}\n`;
+		if (appData.followUpDate) body += `- **Follow-up / Deadline:** ${appData.followUpDate}\n`;
 		if (appData.jobUrl) body += `- **Job Posting:** [Link](${appData.jobUrl})\n`;
 		body += `- **Applied Date:** ${appData.dateApplied || today}\n\n`;
 
@@ -199,9 +202,12 @@ export class ApplicationService {
 		status?: JobStatus;
 		dateApplied?: string;
 		location?: string;
+		workplaceType?: WorkplaceType;
+		employmentType?: EmploymentType;
 		salary?: string;
 		jobUrl?: string;
 		source?: string;
+		followUpDate?: string;
 		notes?: string;
 		jobDescription?: string;
 		jobDescriptionFile?: string;
@@ -240,9 +246,12 @@ export class ApplicationService {
 				dateApplied: dateApplied,
 				lastUpdated: today,
 				location: data.location || "",
+				workplaceType: data.workplaceType || "",
+				employmentType: data.employmentType || "",
 				salary: data.salary || "",
 				jobUrl: data.jobUrl || "",
 				source: data.source || "",
+				followUpDate: data.followUpDate || "",
 				jobDescriptionFile: data.jobDescriptionFile || "",
 				tags: ["job-application"],
 				contacts: data.contacts || [],
@@ -308,9 +317,12 @@ export class ApplicationService {
 			dateApplied: frontmatter.dateApplied || "",
 			lastUpdated: frontmatter.lastUpdated || "",
 			location: frontmatter.location || "",
+			workplaceType: frontmatter.workplaceType || undefined,
+			employmentType: frontmatter.employmentType || undefined,
 			salary: frontmatter.salary || "",
 			jobUrl: frontmatter.jobUrl || "",
 			source: frontmatter.source || "",
+			followUpDate: frontmatter.followUpDate || undefined,
 			jobDescriptionFile: frontmatter.jobDescriptionFile || "",
 			contacts: Array.isArray(frontmatter.contacts) ? frontmatter.contacts : [],
 			interviews: Array.isArray(frontmatter.interviews) ? frontmatter.interviews : [],
@@ -444,9 +456,12 @@ export class ApplicationService {
 				if (fields.role !== undefined) fm.role = fields.role;
 				if (fields.status !== undefined) fm.status = fields.status;
 				if (fields.location !== undefined) fm.location = fields.location;
+				if (fields.workplaceType !== undefined) fm.workplaceType = fields.workplaceType;
+				if (fields.employmentType !== undefined) fm.employmentType = fields.employmentType;
 				if (fields.salary !== undefined) fm.salary = fields.salary;
 				if (fields.jobUrl !== undefined) fm.jobUrl = fields.jobUrl;
 				if (fields.source !== undefined) fm.source = fields.source;
+				if (fields.followUpDate !== undefined) fm.followUpDate = fields.followUpDate;
 				if (fields.dateApplied !== undefined) fm.dateApplied = fields.dateApplied;
 				if (fields.jobDescriptionFile !== undefined) fm.jobDescriptionFile = fields.jobDescriptionFile;
 				fm.lastUpdated = today;
@@ -500,9 +515,12 @@ export class ApplicationService {
 			if (fields.role !== undefined) fm.role = fields.role;
 			if (fields.status !== undefined) fm.status = fields.status;
 			if (fields.location !== undefined) fm.location = fields.location;
+			if (fields.workplaceType !== undefined) fm.workplaceType = fields.workplaceType;
+			if (fields.employmentType !== undefined) fm.employmentType = fields.employmentType;
 			if (fields.salary !== undefined) fm.salary = fields.salary;
 			if (fields.jobUrl !== undefined) fm.jobUrl = fields.jobUrl;
 			if (fields.source !== undefined) fm.source = fields.source;
+			if (fields.followUpDate !== undefined) fm.followUpDate = fields.followUpDate;
 			if (fields.dateApplied !== undefined) fm.dateApplied = fields.dateApplied;
 			if (fields.jobDescriptionFile !== undefined) fm.jobDescriptionFile = fields.jobDescriptionFile;
 			if (fields.contacts !== undefined) fm.contacts = fields.contacts;

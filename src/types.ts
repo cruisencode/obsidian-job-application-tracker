@@ -55,6 +55,10 @@ export interface StatusHistoryEntry {
 	note?: string;
 }
 
+export type WorkplaceType = "Remote" | "Hybrid" | "On-site";
+
+export type EmploymentType = "Full-time" | "Contract" | "Part-time" | "Internship";
+
 export interface JobApplication {
 	filePath: string;
 	company: string;
@@ -63,9 +67,12 @@ export interface JobApplication {
 	dateApplied: string; // YYYY-MM-DD
 	lastUpdated: string; // YYYY-MM-DD
 	location?: string;
+	workplaceType?: WorkplaceType;
+	employmentType?: EmploymentType;
 	salary?: string;
 	jobUrl?: string;
 	source?: string; // e.g. "LinkedIn", "Referral", "Indeed", "Company Site"
+	followUpDate?: string; // YYYY-MM-DD
 	contacts: Contact[];
 	interviews: InterviewRound[];
 	statusHistory: StatusHistoryEntry[];

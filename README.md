@@ -1,6 +1,6 @@
 # Job Application Tracker
 
-An all-in-one job search management plugin for [Obsidian](https://obsidian.md). Track job applications, manage key contacts, schedule interviews, generate interview prep notes from customizable templates, attach and view job description PDFs/MD files in collapsible callouts, and visualize your search pipeline with Kanban, Table, List, and Metrics views.
+An all-in-one job application pipeline and career search command center for [Obsidian](https://obsidian.md). Track applications across customizable stages, manage key contacts and recruiters, schedule multi-round interview pipelines, generate rich interview prep & debrief notes from customizable templates, attach and view job description PDFs/MD files in collapsible callouts, track follow-up deadlines & workplace models (Remote/Hybrid/On-site), and visualize your search pipeline with Kanban, Table, List, and Metrics views (including a pure native SVG Sankey diagram).
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Obsidian](https://img.shields.io/badge/Obsidian-v0.15.0%2B-purple.svg)
@@ -11,8 +11,8 @@ An all-in-one job search management plugin for [Obsidian](https://obsidian.md). 
 
 ### 📊 Visual Dashboard with 4 View Modes
 - **Kanban Board**: Drag-and-drop cards across pipeline stage columns (*Wishlist* ➔ *Applied* ➔ *Screening* ➔ *Interviewing* ➔ *Offer* ➔ *Accepted* / *Rejected* / *Withdrawn* / *Ghosted*). Moving cards instantly updates note frontmatter and logs timestamped status activity.
-- **Table View**: Sortable columns (Company, Role, Status, Applied Date, Location, Salary, Source), clickable status badges, and quick action menus.
-- **List View**: Compact card layout highlighting next scheduled interviews and key details.
+- **Table View**: Sortable columns (Company, Role, Status, Applied Date, Location, Workplace Model, Salary, Source), clickable status badges, and quick action menus.
+- **List View**: Compact card layout highlighting workplace type, compensation, follow-up deadlines, and next scheduled interviews.
 - **Metrics & Conversion Analytics**:
   - **Sankey Pipeline Diagram**: Pure native SVG vector Sankey diagram charting the flow from application sources through screening and interview stages to final outcomes (zero external dependencies, zero permission prompts).
   - **Key KPI Cards**: Total Applications, Active Pipeline, Response Rate (%), Interview Rate (%), Offer Rate (%), Total Contacts, and Interview Rounds.
@@ -24,7 +24,7 @@ An all-in-one job search management plugin for [Obsidian](https://obsidian.md). 
 - Each application is saved as a Markdown note with clean YAML frontmatter in your designated applications folder (`Job Applications/` by default).
 - Zero vendor lock-in; fully compatible with Obsidian Search, Dataview, and graph view.
 - Automatically generated note sections:
-  - 📋 **Overview**: Role, Salary, Location, Source, Job Posting link, Applied Date.
+  - 📋 **Overview**: Role, Salary, Location, Workplace Model (Remote/Hybrid/On-site), Employment Type, Source, Follow-up Date, Job Posting link, Applied Date.
   - 👥 **Key Contacts**: Dynamic list of hiring managers, recruiters, coordinators.
   - 📅 **Interviews & Stages**: Chronological list of interview rounds linked to prep notes.
   - 📝 **Notes & Activity Log**: Timestamped audit trail of status updates and feedback.
@@ -36,26 +36,29 @@ An all-in-one job search management plugin for [Obsidian](https://obsidian.md). 
 - **Collapsible Callout Embedding**: Embedded inside notes with `> [!abstract]- 📎 Job Description (PDF)` so large files don't clutter your notes until you click to expand.
 - **1-Click Badges**: Interactive badges on Kanban cards, Table rows, and List items open the attached PDF/MD file immediately.
 
-### 👥 Contacts Management
+### 👥 Contacts & Recruiter Management
 - Track recruiters, recruiting coordinators, hiring managers, teammates, executives, or custom roles.
 - Record email addresses (clickable `mailto:`), phone numbers, LinkedIn profiles, and conversation notes.
 - Seamlessly updates note frontmatter and the markdown body in real time.
 
-### 🎯 Interview Tracker & Prep Note Generator
+### 🎯 Multi-Round Interview Tracker & Intelligence Hub
 - Schedule multiple rounds per application (*Recruiter Screen*, *Technical Screen*, *Hiring Manager*, *System Design*, *Coding Challenge*, *Behavioral*, *Onsite / Panel*, *Executive / Final*, *Other*).
 - **Auto-Status Advancement**: Scheduling a new interview automatically advances the application status to **`Interviewing`** (for active early-stage applications in *Wishlist*, *Applied*, or *Screening*, while preserving finalized outcomes like *Accepted*, *Rejected*, *Withdrawn*, or *Ghosted*).
 - **Automated Prep Note Generator**: Instantly generates a dedicated prep note based on an editable template containing:
-  - 🏢 Company & Role Research
-  - 🎯 Role Requirements & Alignment
-  - 💡 STAR Behavioral Prep (Situation, Task, Action, Result)
-  - ❓ Questions to Ask the Interviewer
-  - 📝 Post-Interview Debrief & Reflection
+  - 🏢 Company Intelligence & Team Context
+  - 🎯 Key Strengths & Role Alignment
+  - 💡 STAR Stories (Situation, Task, Action, Result & Metric)
+  - 🛠️ Technical & Architecture Focus Areas
+  - 💰 Target Compensation & Range
+  - ❓ Tailored Questions for Hiring Managers, Peers, and Recruiters
+  - 📝 Post-Interview Debrief & Action Items
 - Automatically links prep notes inside the main application note and opens them for immediate prep.
 - **Interview Debrief Modal**: Log interview outcomes (`Completed` or `Cancelled`), record debrief notes, and advance the application stage.
 
-### 🔍 Live Search & Filtering
-- Search across company names, roles, locations, sources, compensation, and contact names with instant, debounced results.
+### 🔍 Live Search, Filtering & Follow-ups
+- Search across company names, roles, locations, workplace types, sources, compensation, and contact names with instant, debounced results.
 - Filter by specific application stages.
+- Track follow-up dates and application deadlines.
 
 ### ♿ Accessibility & Mobile Support
 - **Full Keyboard Navigation**: Navigate view switcher tabs, Kanban cards, sortable Table headers, and status badges with <kbd>Tab</kbd>, <kbd>Enter</kbd>, and <kbd>Space</kbd>.

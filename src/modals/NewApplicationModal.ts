@@ -1,6 +1,6 @@
 import { App, Modal, Notice, Setting } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
-import { Contact, JobStatus } from "../types";
+import { Contact, EmploymentType, JobStatus, WorkplaceType } from "../types";
 
 /**
  * Modal for creating a new job application note with details and optional JD attachments.
@@ -13,9 +13,12 @@ export class NewApplicationModal extends Modal {
 	status: JobStatus;
 	dateApplied = "";
 	location = "";
+	workplaceType: WorkplaceType | "" = "";
+	employmentType: EmploymentType | "" = "";
 	salary = "";
 	jobUrl = "";
 	source = "";
+	followUpDate = "";
 	notes = "";
 	recruiterName = "";
 	recruiterEmail = "";
@@ -87,12 +90,41 @@ export class NewApplicationModal extends Modal {
 		// Location
 		new Setting(contentEl)
 			.setName("Location")
-			.setDesc("e.g. Remote, New York, NY, Hybrid")
+			.setDesc("e.g. New York, NY, Austin, TX")
 			.addText((text) =>
-				text.setPlaceholder("Remote").onChange((value) => {
+				text.setPlaceholder("e.g. New York, NY").onChange((value) => {
 					this.location = value;
 				})
 			);
+
+		// Workplace Type (Remote / Hybrid / On-site)
+		new Setting(contentEl)
+			.setName("Workplace Model")
+			.setDesc("Work arrangement model")
+			.addDropdown((dropdown) => {
+				dropdown.addOption("", "Select model...");
+				dropdown.addOption("Remote", "Remote");
+				dropdown.addOption("Hybrid", "Hybrid");
+				dropdown.addOption("On-site", "On-site");
+				dropdown.onChange((value) => {
+					this.workplaceType = value as WorkplaceType | "";
+				});
+			});
+
+		// Employment Type
+		new Setting(contentEl)
+			.setName("Employment Type")
+			.setDesc("Job engagement type")
+			.addDropdown((dropdown) => {
+				dropdown.addOption("", "Select type...");
+				dropdown.addOption("Full-time", "Full-time");
+				dropdown.addOption("Contract", "Contract");
+				dropdown.addOption("Part-time", "Part-time");
+				dropdown.addOption("Internship", "Internship");
+				dropdown.onChange((value) => {
+					this.employmentType = value as EmploymentType | "";
+				});
+			});
 
 		// Salary
 		new Setting(contentEl)
@@ -117,6 +149,16 @@ export class NewApplicationModal extends Modal {
 					this.source = value;
 				});
 			});
+
+		// Follow-up Date
+		new Setting(contentEl)
+			.setName("Follow-up / Deadline Date")
+			.setDesc("Optional reminder date (YYYY-MM-DD)")
+			.addText((text) =>
+				text.setPlaceholder("YYYY-MM-DD").onChange((value) => {
+					this.followUpDate = value;
+				})
+			);
 
 		// Job URL
 		new Setting(contentEl)
@@ -248,9 +290,12 @@ export class NewApplicationModal extends Modal {
 				status: this.status,
 				dateApplied: this.dateApplied.trim(),
 				location: this.location.trim(),
+				workplaceType: this.workplaceType || undefined,
+				employmentType: this.employmentType || undefined,
 				salary: this.salary.trim(),
 				jobUrl: this.jobUrl.trim(),
 				source: this.source.trim(),
+				followUpDate: this.followUpDate.trim() || undefined,
 				notes: this.notes.trim(),
 				jobDescription: jobDescriptionText.trim() || undefined,
 				jobDescriptionFile: attachmentPath || undefined,

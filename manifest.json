@@ -3,7 +3,7 @@
   "name": "Job Application Tracker",
   "version": "0.1.0",
   "minAppVersion": "0.15.0",
-  "description": "Track and manage job applications directly within Obsidian.",
+  "description": "Visual job application pipeline, interview debrief hub, PDF attachment manager, and career search analytics for Obsidian.",
   "author": "cruisencode",
   "authorUrl": "https://github.com/cruisencode",
   "isDesktopOnly": false

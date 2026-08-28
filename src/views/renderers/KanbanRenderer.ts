@@ -168,9 +168,21 @@ export class KanbanRenderer {
 			setIcon(locIcon, "map-pin");
 			locBadge.createSpan({ text: app.location });
 		}
+		if (app.workplaceType) {
+			const wpBadge = badgesRow.createSpan({ cls: "job-tracker-badge job-tracker-badge-workplace" });
+			const wpIcon = wpBadge.createSpan({ cls: "job-tracker-badge-icon" });
+			setIcon(wpIcon, app.workplaceType === "Remote" ? "globe" : app.workplaceType === "Hybrid" ? "layers" : "building");
+			wpBadge.createSpan({ text: app.workplaceType });
+		}
 		if (app.salary) {
 			const salBadge = badgesRow.createSpan({ cls: "job-tracker-badge job-tracker-badge-salary" });
 			salBadge.createSpan({ text: app.salary });
+		}
+		if (app.followUpDate) {
+			const fuBadge = badgesRow.createSpan({ cls: "job-tracker-badge job-tracker-badge-followup" });
+			const fuIcon = fuBadge.createSpan({ cls: "job-tracker-badge-icon" });
+			setIcon(fuIcon, "bell");
+			fuBadge.createSpan({ text: app.followUpDate });
 		}
 		if (app.jobDescriptionFile) {
 			const isPdf = app.jobDescriptionFile.toLowerCase().endsWith(".pdf");

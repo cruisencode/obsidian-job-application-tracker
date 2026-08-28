@@ -1,7 +1,7 @@
 {
   "name": "obsidian-job-application-tracker",
   "version": "0.1.0",
-  "description": "Track and manage job applications directly within Obsidian.",
+  "description": "Visual job application pipeline, interview debrief hub, PDF attachment manager, and career search analytics for Obsidian.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",

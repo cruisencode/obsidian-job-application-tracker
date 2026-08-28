@@ -111,8 +111,17 @@ export class TableRenderer {
 			// Applied Date
 			tr.createEl("td", { text: app.dateApplied || "-" });
 
-			// Location
-			tr.createEl("td", { text: app.location || "-" });
+			// Location & Workplace Model
+			const tdLoc = tr.createEl("td");
+			if (app.location && app.workplaceType) {
+				tdLoc.createSpan({ text: `${app.location} (${app.workplaceType})` });
+			} else if (app.location) {
+				tdLoc.createSpan({ text: app.location });
+			} else if (app.workplaceType) {
+				tdLoc.createSpan({ text: app.workplaceType });
+			} else {
+				tdLoc.createSpan({ text: "-", cls: "text-muted" });
+			}
 
 			// Salary
 			tr.createEl("td", { text: app.salary || "-" });

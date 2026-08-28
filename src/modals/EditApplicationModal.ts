@@ -1,6 +1,6 @@
 import { App, Modal, Notice, Setting, TFile } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
-import { JobApplication, JobStatus } from "../types";
+import { EmploymentType, JobApplication, JobStatus, WorkplaceType } from "../types";
 import { SelectApplicationModal } from "./UpdateStatusModal";
 
 /**
@@ -15,9 +15,12 @@ export class EditApplicationModal extends Modal {
 	status: JobStatus;
 	dateApplied = "";
 	location = "";
+	workplaceType: WorkplaceType | "" = "";
+	employmentType: EmploymentType | "" = "";
 	salary = "";
 	jobUrl = "";
 	source = "";
+	followUpDate = "";
 	jobDescriptionFile = "";
 	uploadedFile: File | null = null;
 	newJobDescriptionText = "";
@@ -32,9 +35,12 @@ export class EditApplicationModal extends Modal {
 			this.status = application.status;
 			this.dateApplied = application.dateApplied;
 			this.location = application.location || "";
+			this.workplaceType = application.workplaceType || "";
+			this.employmentType = application.employmentType || "";
 			this.salary = application.salary || "";
 			this.jobUrl = application.jobUrl || "";
 			this.source = application.source || "";
+			this.followUpDate = application.followUpDate || "";
 			this.jobDescriptionFile = application.jobDescriptionFile || "";
 		} else {
 			this.status = plugin.settings.defaultStatus || "Applied";
@@ -118,6 +124,37 @@ export class EditApplicationModal extends Modal {
 				})
 			);
 
+		// Workplace Model
+		new Setting(contentEl)
+			.setName("Workplace Model")
+			.setDesc("Work arrangement model")
+			.addDropdown((dropdown) => {
+				dropdown.addOption("", "Select model...");
+				dropdown.addOption("Remote", "Remote");
+				dropdown.addOption("Hybrid", "Hybrid");
+				dropdown.addOption("On-site", "On-site");
+				dropdown.setValue(this.workplaceType);
+				dropdown.onChange((value) => {
+					this.workplaceType = value as WorkplaceType | "";
+				});
+			});
+
+		// Employment Type
+		new Setting(contentEl)
+			.setName("Employment Type")
+			.setDesc("Job engagement type")
+			.addDropdown((dropdown) => {
+				dropdown.addOption("", "Select type...");
+				dropdown.addOption("Full-time", "Full-time");
+				dropdown.addOption("Contract", "Contract");
+				dropdown.addOption("Part-time", "Part-time");
+				dropdown.addOption("Internship", "Internship");
+				dropdown.setValue(this.employmentType);
+				dropdown.onChange((value) => {
+					this.employmentType = value as EmploymentType | "";
+				});
+			});
+
 		// Salary
 		new Setting(contentEl)
 			.setName("Salary / Compensation")
@@ -140,6 +177,16 @@ export class EditApplicationModal extends Modal {
 					this.source = value;
 				});
 			});
+
+		// Follow-up Date
+		new Setting(contentEl)
+			.setName("Follow-up / Deadline Date")
+			.setDesc("Optional reminder date (YYYY-MM-DD)")
+			.addText((text) =>
+				text.setValue(this.followUpDate).onChange((value) => {
+					this.followUpDate = value;
+				})
+			);
 
 		// Job URL
 		new Setting(contentEl)
@@ -235,9 +282,12 @@ export class EditApplicationModal extends Modal {
 						status: this.status,
 						dateApplied: this.dateApplied.trim(),
 						location: this.location.trim(),
+						workplaceType: this.workplaceType || undefined,
+						employmentType: this.employmentType || undefined,
 						salary: this.salary.trim(),
 						jobUrl: this.jobUrl.trim(),
 						source: this.source.trim(),
+						followUpDate: this.followUpDate.trim() || undefined,
 						jobDescriptionFile: finalAttachmentPath || undefined,
 					},
 					this.newJobDescriptionText ? this.newJobDescriptionText.trim() : undefined
