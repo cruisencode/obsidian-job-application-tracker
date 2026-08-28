@@ -15,6 +15,9 @@ export const INTERVIEW_TYPES: InterviewRoundType[] = [
 	"Other",
 ];
 
+/**
+ * Modal dialog to schedule an interview round, generate prep notes, and update pipeline stage.
+ */
 export class AddInterviewModal extends Modal {
 	plugin: JobApplicationTrackerPlugin;
 	application: JobApplication | null;

@@ -3,6 +3,9 @@ import JobApplicationTrackerPlugin from "../main";
 import { Contact, JobApplication } from "../types";
 import { SelectApplicationModal } from "./UpdateStatusModal";
 
+/**
+ * Modal dialog to add a key contact (recruiter, hiring manager, etc.) to a job application.
+ */
 export class AddContactModal extends Modal {
 	plugin: JobApplicationTrackerPlugin;
 	application: JobApplication | null;

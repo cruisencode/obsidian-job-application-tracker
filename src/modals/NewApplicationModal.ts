@@ -2,6 +2,9 @@ import { App, Modal, Notice, Setting } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { Contact, JobStatus } from "../types";
 
+/**
+ * Modal for creating a new job application note with details and optional JD attachments.
+ */
 export class NewApplicationModal extends Modal {
 	plugin: JobApplicationTrackerPlugin;
 
@@ -16,6 +19,9 @@ export class NewApplicationModal extends Modal {
 	notes = "";
 	recruiterName = "";
 	recruiterEmail = "";
+
+	private companyInputEl: HTMLInputElement | null = null;
+	private roleInputEl: HTMLInputElement | null = null;
 
 	constructor(app: App, plugin: JobApplicationTrackerPlugin) {
 		super(app);
@@ -36,6 +42,7 @@ export class NewApplicationModal extends Modal {
 			.setName("Company")
 			.setDesc("Company name (required)")
 			.addText((text) => {
+				this.companyInputEl = text.inputEl;
 				text.setPlaceholder("e.g. Acme Corp").onChange((value) => {
 					this.company = value;
 				});
@@ -46,11 +53,12 @@ export class NewApplicationModal extends Modal {
 		new Setting(contentEl)
 			.setName("Role / Position")
 			.setDesc("Job title (required)")
-			.addText((text) =>
+			.addText((text) => {
+				this.roleInputEl = text.inputEl;
 				text.setPlaceholder("e.g. Senior Software Engineer").onChange((value) => {
 					this.role = value;
-				})
-			);
+				});
+			});
 
 		// Status
 		new Setting(contentEl)
@@ -203,8 +211,14 @@ export class NewApplicationModal extends Modal {
 		existingVaultPath: string,
 		jobDescriptionText: string
 	) {
-		if (!this.company.trim() || !this.role.trim()) {
-			new Notice("Please enter both a company name and a role.");
+		if (!this.company.trim()) {
+			new Notice("Please enter a company name.");
+			this.companyInputEl?.focus();
+			return;
+		}
+		if (!this.role.trim()) {
+			new Notice("Please enter a role / job title.");
+			this.roleInputEl?.focus();
 			return;
 		}
 

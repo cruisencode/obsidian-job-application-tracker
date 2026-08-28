@@ -5,6 +5,9 @@ import { AddInterviewModal } from "../../modals/AddInterviewModal";
 import { AddContactModal } from "../../modals/AddContactModal";
 import { JobTrackerView } from "../JobTrackerView";
 
+/**
+ * Renderer for the compact List view mode, emphasizing upcoming interviews and quick action buttons.
+ */
 export class ListRenderer {
 	private view: JobTrackerView;
 
@@ -12,6 +15,9 @@ export class ListRenderer {
 		this.view = view;
 	}
 
+	/**
+	 * Renders the compact card list for applications.
+	 */
 	render(container: HTMLElement, apps: JobApplication[]) {
 		const listContainer = container.createDiv({ cls: "job-tracker-list-container" });
 

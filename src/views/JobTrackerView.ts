@@ -43,6 +43,10 @@ export interface MetricsData {
 	allHistoryEntries: { company: string; role: string; filePath: string; date: string; status: string; note?: string }[];
 }
 
+/**
+ * Main dashboard view for the Job Application Tracker plugin, coordinating
+ * Kanban, Table, List, and Metrics view modes with debounced search and filtering.
+ */
 export class JobTrackerView extends ItemView {
 	plugin: JobApplicationTrackerPlugin;
 

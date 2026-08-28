@@ -2,6 +2,9 @@ import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile } from "obsidian"
 import JobApplicationTrackerPlugin from "../main";
 import { JobApplication, JobStatus } from "../types";
 
+/**
+ * Fuzzy search modal allowing the user to select an active job application.
+ */
 export class SelectApplicationModal extends FuzzySuggestModal<JobApplication> {
 	plugin: JobApplicationTrackerPlugin;
 	applications: JobApplication[];
@@ -40,6 +43,9 @@ export class SelectApplicationModal extends FuzzySuggestModal<JobApplication> {
 	}
 }
 
+/**
+ * Quick status update modal for transitioning an application stage and logging notes to activity log.
+ */
 export class UpdateStatusModal extends Modal {
 	plugin: JobApplicationTrackerPlugin;
 	application: JobApplication | null;

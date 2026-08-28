@@ -4,6 +4,9 @@ import { NewApplicationModal } from "../../modals/NewApplicationModal";
 import { UpdateStatusModal } from "../../modals/UpdateStatusModal";
 import { JobTrackerView } from "../JobTrackerView";
 
+/**
+ * Renderer for the Kanban view mode, handling column stages, drag-and-drop, and card interactions.
+ */
 export class KanbanRenderer {
 	private view: JobTrackerView;
 
@@ -11,6 +14,9 @@ export class KanbanRenderer {
 		this.view = view;
 	}
 
+	/**
+	 * Renders the full Kanban board across all configured status columns.
+	 */
 	render(container: HTMLElement, apps: JobApplication[]) {
 		const board = container.createDiv({ cls: "job-tracker-kanban-board" });
 		const statuses = this.view.plugin.settings.statuses;

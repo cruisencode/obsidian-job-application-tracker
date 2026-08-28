@@ -3,6 +3,9 @@ import JobApplicationTrackerPlugin from "../main";
 import { JobApplication, JobStatus } from "../types";
 import { SelectApplicationModal } from "./UpdateStatusModal";
 
+/**
+ * Modal dialog to edit job application fields and update or upload job description attachments.
+ */
 export class EditApplicationModal extends Modal {
 	plugin: JobApplicationTrackerPlugin;
 	application: JobApplication | null;

@@ -25,6 +25,23 @@ export class ApplicationService {
 	}
 
 	/**
+	 * Resolves a file path to a TFile and executes the provided action.
+	 * Displays user feedback if the file cannot be found.
+	 */
+	async withFile<T>(
+		pathOrLink: string,
+		action: (file: TFile) => Promise<T> | T,
+		errorMessage = "Application file could not be found. It may have been moved or deleted."
+	): Promise<T | null> {
+		const file = this.resolveFile(pathOrLink);
+		if (file instanceof TFile) {
+			return await action(file);
+		}
+		new Notice(errorMessage);
+		return null;
+	}
+
+	/**
 	 * Ensure that a folder exists in the vault, creating parent directories if needed.
 	 */
 	async ensureFolder(folderPath: string): Promise<TFolder> {

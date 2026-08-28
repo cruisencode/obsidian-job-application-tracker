@@ -3,6 +3,9 @@ import JobApplicationTrackerPlugin from "../main";
 import { InterviewRound, JobApplication, JobStatus } from "../types";
 import { SelectApplicationModal } from "./UpdateStatusModal";
 
+/**
+ * Modal dialog to log interview round debrief notes, record completion outcome, and advance pipeline stage.
+ */
 export class LogInterviewOutcomeModal extends Modal {
 	plugin: JobApplicationTrackerPlugin;
 	application: JobApplication | null;

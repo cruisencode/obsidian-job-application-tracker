@@ -7,6 +7,9 @@ import { AddContactModal } from "./AddContactModal";
 import { AddInterviewModal } from "./AddInterviewModal";
 import { LogInterviewOutcomeModal } from "./LogInterviewOutcomeModal";
 
+/**
+ * Comprehensive management modal for viewing and managing an application's overview, contacts, and interview rounds.
+ */
 export class ManageApplicationModal extends Modal {
 	plugin: JobApplicationTrackerPlugin;
 	application: JobApplication | null;

@@ -1,5 +1,6 @@
-import { App, Modal, Setting } from "obsidian";
-
+/**
+ * Confirmation dialog for destructive actions (deleting applications, contacts, or interviews).
+ */
 export class ConfirmDeleteModal extends Modal {
 	title: string;
 	message: string;

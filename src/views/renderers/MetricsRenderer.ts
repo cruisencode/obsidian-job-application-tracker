@@ -2,6 +2,10 @@ import { setIcon } from "obsidian";
 import { SankeyDiagram, SankeyLink } from "../SankeyDiagram";
 import { JobTrackerView } from "../JobTrackerView";
 
+/**
+ * Renderer for the Analytics & Metrics dashboard, including KPI cards, Sankey flow diagram,
+ * stage breakdown progress bars, source conversion tables, and recent activity timeline.
+ */
 export class MetricsRenderer {
 	private view: JobTrackerView;
 
@@ -9,6 +13,9 @@ export class MetricsRenderer {
 		this.view = view;
 	}
 
+	/**
+	 * Renders the full statistics and analytics dashboard.
+	 */
 	render(container: HTMLElement) {
 		const metricsContainer = container.createDiv({ cls: "job-tracker-metrics-container" });
 		const m = this.view.getOrComputeMetrics();

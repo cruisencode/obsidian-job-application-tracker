@@ -3,6 +3,9 @@ import { JobApplication } from "../../types";
 import { UpdateStatusModal } from "../../modals/UpdateStatusModal";
 import { JobTrackerView } from "../JobTrackerView";
 
+/**
+ * Renderer for the Table view mode, providing sortable columns, status badges, and action menus.
+ */
 export class TableRenderer {
 	private view: JobTrackerView;
 
@@ -10,6 +13,9 @@ export class TableRenderer {
 		this.view = view;
 	}
 
+	/**
+	 * Renders the full applications table with sortable headers.
+	 */
 	render(container: HTMLElement, apps: JobApplication[]) {
 		const tableWrapper = container.createDiv({ cls: "job-tracker-table-wrapper" });
 		const table = tableWrapper.createEl("table", { cls: "job-tracker-table" });
