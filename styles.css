@@ -821,11 +821,10 @@
 
 /* Sankey Diagram Container */
 .job-tracker-sankey-container {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	overflow-x: auto;
+	display: block;
 	width: 100%;
+	overflow-x: auto;
+	box-sizing: border-box;
 	background-color: var(--background-primary);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
@@ -834,9 +833,11 @@
 }
 
 .job-tracker-native-sankey-svg {
+	width: 100%;
 	max-width: 100%;
 	height: auto;
 	display: block;
+	margin: 0 auto;
 }
 
 .job-tracker-sankey-ribbon {

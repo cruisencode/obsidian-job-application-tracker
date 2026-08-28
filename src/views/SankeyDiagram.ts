@@ -53,6 +53,15 @@ export class SankeyDiagram {
 	}
 
 	/**
+	 * Formats and safely truncates display text labels for diagram nodes.
+	 */
+	static formatDisplayLabel(label: string, value: number, maxChars = 22): string {
+		const clean = (label || "").trim();
+		const displayStr = clean.length > maxChars ? clean.slice(0, maxChars - 1) + "…" : clean;
+		return `${displayStr} (${value})`;
+	}
+
+	/**
 	 * Renders a complete interactive Sankey SVG into the provided container.
 	 */
 	static render(container: HTMLElement, links: SankeyLink[], totalApps: number) {
@@ -143,38 +152,72 @@ export class SankeyDiagram {
 		}
 
 		// 3. Geometry & Layout Coordinates
-		const width = container.clientWidth || 900;
-		const height = Math.max(400, width * 0.55);
-		const paddingX = 80;
-		const paddingY = 36;
+		// Dynamically compute left and right padding based on actual label lengths to ensure labels never clip
+		const leftNodeIds = layerGroups.get(0) || [];
+		const rightNodeIds = layerGroups.get(maxLayer) || [];
+
+		const maxLeftChars = leftNodeIds.reduce((max, id) => {
+			const n = nodeMap.get(id);
+			return Math.max(max, this.formatDisplayLabel(n?.label || id, n?.value || 0).length);
+		}, 10);
+
+		const maxRightChars = rightNodeIds.reduce((max, id) => {
+			const n = nodeMap.get(id);
+			return Math.max(max, this.formatDisplayLabel(n?.label || id, n?.value || 0).length);
+		}, 10);
+
+		const paddingLeft = Math.max(120, Math.min(220, Math.ceil(maxLeftChars * 7.5) + 24));
+		const paddingRight = Math.max(120, Math.min(220, Math.ceil(maxRightChars * 7.5) + 24));
+		const paddingY = 40;
 		const nodeWidth = 14;
 		const nodeGap = 16;
 
-		const usableWidth = width - paddingX * 2;
-		const usableHeight = height - paddingY * 2;
+		const baseWidth = Math.max(880, maxLayer * 200 + paddingLeft + paddingRight);
+		let baseHeight = Math.max(420, baseWidth * 0.5);
+
+		const usableWidth = baseWidth - paddingLeft - paddingRight;
+		let usableHeight = baseHeight - paddingY * 2;
 		const layerXStep = maxLayer > 0 ? usableWidth / maxLayer : usableWidth;
 
-		// Compute positions for each column
+		// Compute node heights and adjust baseHeight if columns are tall
+		let maxColHeight = 0;
 		for (let layer = 0; layer <= maxLayer; layer++) {
 			const nodeIds = layerGroups.get(layer) || [];
 			if (nodeIds.length === 0) continue;
 
 			const totalValue = nodeIds.reduce((sum, id) => sum + (nodeMap.get(id)?.value || 0), 0);
 			const availableHeight = usableHeight - (nodeIds.length - 1) * nodeGap;
-			const pixelsPerUnit = totalValue > 0 ? Math.min(30, availableHeight / totalValue) : 20;
+			const pixelsPerUnit = totalValue > 0 ? Math.min(32, Math.max(8, availableHeight / totalValue)) : 20;
 
-			// Total height of this column
-			let columnHeight = 0;
+			let colHeight = 0;
 			for (const id of nodeIds) {
 				const n = nodeMap.get(id)!;
-				n.height = Math.max(16, n.value * pixelsPerUnit);
-				columnHeight += n.height;
+				n.height = Math.max(18, n.value * pixelsPerUnit);
+				colHeight += n.height;
+			}
+			colHeight += (nodeIds.length - 1) * nodeGap;
+			if (colHeight > maxColHeight) maxColHeight = colHeight;
+		}
+
+		if (maxColHeight > usableHeight) {
+			baseHeight = maxColHeight + paddingY * 2;
+			usableHeight = baseHeight - paddingY * 2;
+		}
+
+		// Compute positions for each column
+		for (let layer = 0; layer <= maxLayer; layer++) {
+			const nodeIds = layerGroups.get(layer) || [];
+			if (nodeIds.length === 0) continue;
+
+			let columnHeight = 0;
+			for (const id of nodeIds) {
+				columnHeight += nodeMap.get(id)!.height;
 			}
 			columnHeight += (nodeIds.length - 1) * nodeGap;
 
 			// Vertically center column
 			let currentY = paddingY + (usableHeight - columnHeight) / 2;
-			const currentX = paddingX + layer * layerXStep;
+			const currentX = paddingLeft + layer * layerXStep;
 
 			for (const id of nodeIds) {
 				const n = nodeMap.get(id)!;
@@ -186,12 +229,13 @@ export class SankeyDiagram {
 
 		// 4. Build SVG
 		const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-		svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+		svg.setAttribute("viewBox", `0 0 ${baseWidth} ${baseHeight}`);
 		svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 		svg.setAttribute("class", "job-tracker-native-sankey-svg");
 		svg.style.width = "100%";
-		svg.style.maxWidth = `${width}px`;
-		svg.style.overflow = "visible";
+		svg.style.maxWidth = "100%";
+		svg.style.height = "auto";
+		svg.style.display = "block";
 
 		// Definitions for gradients & filters
 		const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
@@ -308,7 +352,6 @@ export class SankeyDiagram {
 			const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
 			const isRightSide = node.layer === maxLayer;
 
-			text.setAttribute("y", `${node.y + node.height / 2 + 4}`);
 			text.setAttribute("font-size", "11px");
 			text.setAttribute("font-family", "var(--font-default, sans-serif)");
 			text.setAttribute("fill", "var(--text-normal, #dcddde)");
@@ -316,21 +359,23 @@ export class SankeyDiagram {
 
 			if (isRightSide) {
 				text.setAttribute("x", `${node.x + node.width + 8}`);
+				text.setAttribute("y", `${node.y + node.height / 2 + 4}`);
 				text.setAttribute("text-anchor", "start");
 			} else if (node.layer === 0) {
 				text.setAttribute("x", `${node.x - 8}`);
+				text.setAttribute("y", `${node.y + node.height / 2 + 4}`);
 				text.setAttribute("text-anchor", "end");
 			} else {
 				text.setAttribute("x", `${node.x + node.width / 2}`);
-				text.setAttribute("y", `${node.y - 6}`);
+				text.setAttribute("y", `${Math.max(14, node.y - 6)}`);
 				text.setAttribute("text-anchor", "middle");
 			}
 
-			text.textContent = `${node.label} (${node.value})`;
+			text.textContent = this.formatDisplayLabel(node.label, node.value);
 			g.appendChild(text);
 
 			const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
-			title.textContent = `${node.label}: ${node.value} applications`;
+			title.textContent = `${node.label}: ${node.value} application${node.value === 1 ? "" : "s"}`;
 			g.appendChild(title);
 
 			nodesGroup.appendChild(g);
