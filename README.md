@@ -43,7 +43,7 @@ An all-in-one job search management plugin for [Obsidian](https://obsidian.md). 
 
 ### 🎯 Interview Tracker & Prep Note Generator
 - Schedule multiple rounds per application (*Recruiter Screen*, *Technical Screen*, *Hiring Manager*, *System Design*, *Coding Challenge*, *Behavioral*, *Onsite / Panel*, *Executive / Final*, *Other*).
-- **Auto-Status Advancement**: Scheduling a new interview automatically advances the application status to **`Interviewing`** (if currently in *Wishlist*, *Applied*, *Screening*, *Ghosted*, or *Withdrawn*).
+- **Auto-Status Advancement**: Scheduling a new interview automatically advances the application status to **`Interviewing`** (for active early-stage applications in *Wishlist*, *Applied*, or *Screening*, while preserving finalized outcomes like *Accepted*, *Rejected*, *Withdrawn*, or *Ghosted*).
 - **Automated Prep Note Generator**: Instantly generates a dedicated prep note based on an editable template containing:
   - 🏢 Company & Role Research
   - 🎯 Role Requirements & Alignment
