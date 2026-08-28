@@ -1,4 +1,4 @@
-import { App, Modal, Setting, TFile } from "obsidian";
+import { App, Modal, Notice, Setting, TFile } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { JobApplication, JobStatus } from "../types";
 import { SelectApplicationModal } from "./UpdateStatusModal";
@@ -212,35 +212,41 @@ export class EditApplicationModal extends Modal {
 	async handleSubmit() {
 		if (!this.application) return;
 
-		let finalAttachmentPath = this.jobDescriptionFile;
-		if (this.uploadedFile) {
-			const saved = await this.plugin.appService.saveAttachment(
-				this.uploadedFile,
-				`${this.company.trim()} - ${this.role.trim()}`
-			);
-			finalAttachmentPath = saved.path;
-		}
+		try {
+			let finalAttachmentPath = this.jobDescriptionFile;
+			if (this.uploadedFile) {
+				const saved = await this.plugin.appService.saveAttachment(
+					this.uploadedFile,
+					`${this.company.trim()} - ${this.role.trim()}`
+				);
+				finalAttachmentPath = saved.path;
+			}
 
-		const file = this.plugin.appService.resolveFile(this.application.filePath);
-		if (file instanceof TFile) {
-			await this.plugin.appService.updateApplicationDetails(
-				file,
-				{
-					company: this.company.trim(),
-					role: this.role.trim(),
-					status: this.status,
-					dateApplied: this.dateApplied.trim(),
-					location: this.location.trim(),
-					salary: this.salary.trim(),
-					jobUrl: this.jobUrl.trim(),
-					source: this.source.trim(),
-					jobDescriptionFile: finalAttachmentPath || undefined,
-				},
-				this.newJobDescriptionText ? this.newJobDescriptionText.trim() : undefined
-			);
+			const file = this.plugin.appService.resolveFile(this.application.filePath);
+			if (file instanceof TFile) {
+				await this.plugin.appService.updateApplicationDetails(
+					file,
+					{
+						company: this.company.trim(),
+						role: this.role.trim(),
+						status: this.status,
+						dateApplied: this.dateApplied.trim(),
+						location: this.location.trim(),
+						salary: this.salary.trim(),
+						jobUrl: this.jobUrl.trim(),
+						source: this.source.trim(),
+						jobDescriptionFile: finalAttachmentPath || undefined,
+					},
+					this.newJobDescriptionText ? this.newJobDescriptionText.trim() : undefined
+				);
+				this.close();
+			} else {
+				new Notice("Application file could not be found. It may have been moved or deleted.");
+			}
+		} catch (err) {
+			console.error("Job Tracker: Modal action failed:", err);
+			new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
 		}
-
-		this.close();
 	}
 
 	onClose() {

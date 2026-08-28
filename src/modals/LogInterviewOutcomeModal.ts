@@ -1,4 +1,4 @@
-import { App, Modal, Setting, TFile } from "obsidian";
+import { App, Modal, Notice, Setting, TFile } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { InterviewRound, JobApplication, JobStatus } from "../types";
 import { SelectApplicationModal } from "./UpdateStatusModal";
@@ -135,18 +135,24 @@ export class LogInterviewOutcomeModal extends Modal {
 	async handleSubmit() {
 		if (!this.application || !this.selectedInterviewId) return;
 
-		const file = this.plugin.appService.resolveFile(this.application.filePath);
-		if (file instanceof TFile) {
-			await this.plugin.appService.updateInterviewOutcome(
-				file,
-				this.selectedInterviewId,
-				this.status,
-				this.outcomeNotes.trim() || undefined,
-				this.nextStage ? (this.nextStage as JobStatus) : undefined
-			);
+		try {
+			const file = this.plugin.appService.resolveFile(this.application.filePath);
+			if (file instanceof TFile) {
+				await this.plugin.appService.updateInterviewOutcome(
+					file,
+					this.selectedInterviewId,
+					this.status,
+					this.outcomeNotes.trim() || undefined,
+					this.nextStage ? (this.nextStage as JobStatus) : undefined
+				);
+				this.close();
+			} else {
+				new Notice("Application file could not be found. It may have been moved or deleted.");
+			}
+		} catch (err) {
+			console.error("Job Tracker: Modal action failed:", err);
+			new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
 		}
-
-		this.close();
 	}
 
 	onClose() {

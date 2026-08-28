@@ -151,24 +151,30 @@ export class AddContactModal extends Modal {
 			return;
 		}
 
-		const resolvedRole = this.role === "Other" ? (this.customRole.trim() || "Other") : this.role;
+		try {
+			const resolvedRole = this.role === "Other" ? (this.customRole.trim() || "Other") : this.role;
 
-		const contact: Contact = {
-			id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-			name: this.name.trim(),
-			role: resolvedRole,
-			email: this.email.trim() || undefined,
-			phone: this.phone.trim() || undefined,
-			linkedin: this.linkedin.trim() || undefined,
-			notes: this.notes.trim() || undefined,
-		};
+			const contact: Contact = {
+				id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+				name: this.name.trim(),
+				role: resolvedRole,
+				email: this.email.trim() || undefined,
+				phone: this.phone.trim() || undefined,
+				linkedin: this.linkedin.trim() || undefined,
+				notes: this.notes.trim() || undefined,
+			};
 
-		const file = this.plugin.appService.resolveFile(this.application.filePath);
-		if (file instanceof TFile) {
-			await this.plugin.appService.addContactToApplication(file, contact);
+			const file = this.plugin.appService.resolveFile(this.application.filePath);
+			if (file instanceof TFile) {
+				await this.plugin.appService.addContactToApplication(file, contact);
+				this.close();
+			} else {
+				new Notice("Application file could not be found. It may have been moved or deleted.");
+			}
+		} catch (err) {
+			console.error("Job Tracker: Modal action failed:", err);
+			new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
 		}
-
-		this.close();
 	}
 
 	onClose() {

@@ -161,34 +161,39 @@ export class AddInterviewModal extends Modal {
 			return;
 		}
 
-		const interview: InterviewRound = {
-			id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-			roundName: this.roundName.trim(),
-			roundType: this.roundType,
-			date: this.date.trim() || undefined,
-			time: this.time.trim() || undefined,
-			interviewers: this.interviewers.trim() || undefined,
-			status: "Scheduled",
-		};
+		try {
+			const interview: InterviewRound = {
+				id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+				roundName: this.roundName.trim(),
+				roundType: this.roundType,
+				date: this.date.trim() || undefined,
+				time: this.time.trim() || undefined,
+				interviewers: this.interviewers.trim() || undefined,
+				status: "Scheduled",
+			};
 
-		const file = this.plugin.appService.resolveFile(this.application.filePath);
-		if (file instanceof TFile) {
-			const result = await this.plugin.appService.addInterviewToApplication(
-				file,
-				interview,
-				this.createPrepNote,
-				this.updateStatusToInterviewing
-			);
+			const file = this.plugin.appService.resolveFile(this.application.filePath);
+			if (file instanceof TFile) {
+				const result = await this.plugin.appService.addInterviewToApplication(
+					file,
+					interview,
+					this.createPrepNote,
+					this.updateStatusToInterviewing
+				);
 
-			this.close();
+				this.close();
 
-			// If prep note was generated, open it for immediate prep
-			if (result.prepFile) {
-				const leaf = this.app.workspace.getLeaf(false);
-				await leaf.openFile(result.prepFile);
+				// If prep note was generated, open it for immediate prep
+				if (result.prepFile) {
+					const leaf = this.app.workspace.getLeaf(false);
+					await leaf.openFile(result.prepFile);
+				}
+			} else {
+				new Notice("Application file could not be found. It may have been moved or deleted.");
 			}
-		} else {
-			this.close();
+		} catch (err) {
+			console.error("Job Tracker: Modal action failed:", err);
+			new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
 		}
 	}
 

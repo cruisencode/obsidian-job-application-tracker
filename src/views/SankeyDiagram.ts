@@ -143,15 +143,15 @@ export class SankeyDiagram {
 		}
 
 		// 3. Geometry & Layout Coordinates
-		const svgWidth = Math.max(760, (maxLayer + 1) * 170);
-		const svgHeight = 360;
+		const width = container.clientWidth || 900;
+		const height = Math.max(400, width * 0.55);
 		const paddingX = 80;
 		const paddingY = 36;
 		const nodeWidth = 14;
 		const nodeGap = 16;
 
-		const usableWidth = svgWidth - paddingX * 2;
-		const usableHeight = svgHeight - paddingY * 2;
+		const usableWidth = width - paddingX * 2;
+		const usableHeight = height - paddingY * 2;
 		const layerXStep = maxLayer > 0 ? usableWidth / maxLayer : usableWidth;
 
 		// Compute positions for each column
@@ -186,11 +186,11 @@ export class SankeyDiagram {
 
 		// 4. Build SVG
 		const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-		svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
-		svg.setAttribute("width", "100%");
-		svg.setAttribute("height", "100%");
+		svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+		svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 		svg.setAttribute("class", "job-tracker-native-sankey-svg");
-		svg.style.maxWidth = "100%";
+		svg.style.width = "100%";
+		svg.style.maxWidth = `${width}px`;
 		svg.style.overflow = "visible";
 
 		// Definitions for gradients & filters
@@ -203,7 +203,7 @@ export class SankeyDiagram {
 
 		// Draw Links (Ribbons)
 		const linksGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-		linksGroup.setAttribute("class", "sankey-links");
+		linksGroup.setAttribute("class", "job-tracker-sankey-links");
 		svg.appendChild(linksGroup);
 
 		for (const link of links) {
@@ -263,7 +263,7 @@ export class SankeyDiagram {
 			const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
 			path.setAttribute("d", pathData);
 			path.setAttribute("fill", `url(#${gradId})`);
-			path.setAttribute("class", "sankey-ribbon");
+			path.setAttribute("class", "job-tracker-sankey-ribbon");
 
 			// Interactive hover
 			path.onmouseenter = () => {
@@ -284,12 +284,12 @@ export class SankeyDiagram {
 
 		// Draw Nodes
 		const nodesGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-		nodesGroup.setAttribute("class", "sankey-nodes");
+		nodesGroup.setAttribute("class", "job-tracker-sankey-nodes");
 		svg.appendChild(nodesGroup);
 
 		for (const node of nodeMap.values()) {
 			const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-			g.setAttribute("class", "sankey-node");
+			g.setAttribute("class", "job-tracker-sankey-node");
 
 			// Rect
 			const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");

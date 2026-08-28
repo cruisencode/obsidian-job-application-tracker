@@ -208,45 +208,50 @@ export class NewApplicationModal extends Modal {
 			return;
 		}
 
-		let attachmentPath = existingVaultPath || "";
-		if (uploadedFile) {
-			const savedFile = await this.plugin.appService.saveAttachment(
-				uploadedFile,
-				`${this.company.trim()} - ${this.role.trim()}`
-			);
-			attachmentPath = savedFile.path;
-		}
+		try {
+			let attachmentPath = existingVaultPath || "";
+			if (uploadedFile) {
+				const savedFile = await this.plugin.appService.saveAttachment(
+					uploadedFile,
+					`${this.company.trim()} - ${this.role.trim()}`
+				);
+				attachmentPath = savedFile.path;
+			}
 
-		const contacts: Contact[] = [];
-		if (this.recruiterName.trim()) {
-			contacts.push({
-				id: Date.now().toString(),
-				name: this.recruiterName.trim(),
-				role: "Recruiter",
-				email: this.recruiterEmail.trim() || undefined,
+			const contacts: Contact[] = [];
+			if (this.recruiterName.trim()) {
+				contacts.push({
+					id: Date.now().toString(),
+					name: this.recruiterName.trim(),
+					role: "Recruiter",
+					email: this.recruiterEmail.trim() || undefined,
+				});
+			}
+
+			const file = await this.plugin.appService.createApplication({
+				company: this.company.trim(),
+				role: this.role.trim(),
+				status: this.status,
+				dateApplied: this.dateApplied.trim(),
+				location: this.location.trim(),
+				salary: this.salary.trim(),
+				jobUrl: this.jobUrl.trim(),
+				source: this.source.trim(),
+				notes: this.notes.trim(),
+				jobDescription: jobDescriptionText.trim() || undefined,
+				jobDescriptionFile: attachmentPath || undefined,
+				contacts: contacts,
 			});
+
+			this.close();
+
+			// Open the newly created note in active workspace
+			const leaf = this.app.workspace.getLeaf(false);
+			await leaf.openFile(file);
+		} catch (err) {
+			console.error("Job Tracker: Modal action failed:", err);
+			new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
 		}
-
-		const file = await this.plugin.appService.createApplication({
-			company: this.company.trim(),
-			role: this.role.trim(),
-			status: this.status,
-			dateApplied: this.dateApplied.trim(),
-			location: this.location.trim(),
-			salary: this.salary.trim(),
-			jobUrl: this.jobUrl.trim(),
-			source: this.source.trim(),
-			notes: this.notes.trim(),
-			jobDescription: jobDescriptionText.trim() || undefined,
-			jobDescriptionFile: attachmentPath || undefined,
-			contacts: contacts,
-		});
-
-		this.close();
-
-		// Open the newly created note in active workspace
-		const leaf = this.app.workspace.getLeaf(false);
-		await leaf.openFile(file);
 	}
 
 	onClose() {

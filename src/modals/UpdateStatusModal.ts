@@ -1,4 +1,4 @@
-import { App, FuzzySuggestModal, Modal, Setting, TFile } from "obsidian";
+import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { JobApplication, JobStatus } from "../types";
 
@@ -117,12 +117,18 @@ export class UpdateStatusModal extends Modal {
 	async handleSubmit() {
 		if (!this.application) return;
 
-		const file = this.plugin.appService.resolveFile(this.application.filePath);
-		if (file instanceof TFile) {
-			await this.plugin.appService.updateStatus(file, this.newStatus, this.note.trim());
+		try {
+			const file = this.plugin.appService.resolveFile(this.application.filePath);
+			if (file instanceof TFile) {
+				await this.plugin.appService.updateStatus(file, this.newStatus, this.note.trim());
+				this.close();
+			} else {
+				new Notice("Application file could not be found. It may have been moved or deleted.");
+			}
+		} catch (err) {
+			console.error("Job Tracker: Modal action failed:", err);
+			new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
 		}
-
-		this.close();
 	}
 
 	onClose() {

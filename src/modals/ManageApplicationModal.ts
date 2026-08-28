@@ -157,11 +157,18 @@ export class ManageApplicationModal extends Modal {
 							`Are you sure you want to delete the application note for "${this.application?.company} - ${this.application?.role}"? This will move the file to trash.`,
 							"Delete Application",
 							async () => {
-								const file = this.plugin.appService.resolveFile(this.application!.filePath);
-								if (file instanceof TFile) {
-									await this.plugin.appService.deleteApplication(file);
+								try {
+									const file = this.plugin.appService.resolveFile(this.application!.filePath);
+									if (file instanceof TFile) {
+										await this.plugin.appService.deleteApplication(file);
+										this.close();
+									} else {
+										new Notice("Application file could not be found. It may have been moved or deleted.");
+									}
+								} catch (err) {
+									console.error("Job Tracker: Modal action failed:", err);
+									new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
 								}
-								this.close();
 							}
 						).open();
 					})
@@ -225,10 +232,17 @@ export class ManageApplicationModal extends Modal {
 					`Are you sure you want to remove "${contact.name}" from this application?`,
 					"Remove Contact",
 					async () => {
-						const file = this.plugin.appService.resolveFile(this.application!.filePath);
-						if (file instanceof TFile) {
-							await this.plugin.appService.deleteContact(file, contact.id);
-							this.renderModal();
+						try {
+							const file = this.plugin.appService.resolveFile(this.application!.filePath);
+							if (file instanceof TFile) {
+								await this.plugin.appService.deleteContact(file, contact.id);
+								this.renderModal();
+							} else {
+								new Notice("Application file could not be found. It may have been moved or deleted.");
+							}
+						} catch (err) {
+							console.error("Job Tracker: Modal action failed:", err);
+							new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
 						}
 					}
 				).open();
@@ -321,10 +335,17 @@ export class ManageApplicationModal extends Modal {
 					`Are you sure you want to remove "${iv.roundName}" from this application?`,
 					"Remove Round",
 					async () => {
-						const file = this.plugin.appService.resolveFile(this.application!.filePath);
-						if (file instanceof TFile) {
-							await this.plugin.appService.deleteInterview(file, iv.id);
-							this.renderModal();
+						try {
+							const file = this.plugin.appService.resolveFile(this.application!.filePath);
+							if (file instanceof TFile) {
+								await this.plugin.appService.deleteInterview(file, iv.id);
+								this.renderModal();
+							} else {
+								new Notice("Application file could not be found. It may have been moved or deleted.");
+							}
+						} catch (err) {
+							console.error("Job Tracker: Modal action failed:", err);
+							new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
 						}
 					}
 				).open();
