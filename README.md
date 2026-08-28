@@ -67,24 +67,6 @@ An all-in-one job application pipeline and career search command center for [Obs
 
 ---
 
-## 🚀 Getting Started
-
-### Installation (Manual / Development)
-1. Clone this repository into your Obsidian plugins folder, or symlink it:
-   ```bash
-   mkdir -p "/path/to/your/vault/.obsidian/plugins"
-   ln -s "/path/to/obsidian-job-application-tracker" "/path/to/your/vault/.obsidian/plugins/job-application-tracker"
-   ```
-2. Build the plugin:
-   ```bash
-   cd obsidian-job-application-tracker
-   npm install
-   npm run build
-   ```
-3. In Obsidian, go to **Settings** ➔ **Community plugins**, turn off **Restricted mode**, and enable **Job Application Tracker**.
-
----
-
 ## ⌨️ Commands & Shortcuts
 
 Open the Obsidian Command Palette (<kbd>Cmd</kbd> + <kbd>P</kbd> or <kbd>Ctrl</kbd> + <kbd>P</kbd>) to access:
@@ -124,21 +106,6 @@ Under **Settings** ➔ **Job Application Tracker**, you can configure:
   - `{{time}}`
   - `{{interviewers}}`
   - `{{applicationNoteTitle}}`
-
----
-
-## 🛠️ Development
-
-```bash
-# Install dependencies
-npm install
-
-# Start watch mode (rebuilds automatically on changes)
-npm run dev
-
-# Production build
-npm run build
-```
 
 ---
 
