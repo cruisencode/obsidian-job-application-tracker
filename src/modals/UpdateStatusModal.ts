@@ -19,17 +19,8 @@ export class SelectApplicationModal extends FuzzySuggestModal<JobApplication> {
 		super(app);
 		this.plugin = plugin;
 		this.onSelect = onSelect;
-		this.applications = applications || [];
+		this.applications = applications || this.plugin.appService.getAllApplications();
 		this.setPlaceholder("Type to search application by company or role...");
-	}
-
-	override onOpen() {
-		super.onOpen();
-		if (this.applications.length === 0) {
-			void this.plugin.appService.getAllApplications().then((apps) => {
-				this.applications = apps;
-			});
-		}
 	}
 
 	getItems(): JobApplication[] {
@@ -61,7 +52,7 @@ export class UpdateStatusModal extends Modal {
 		this.newStatus = application?.status || plugin.settings.defaultStatus || "Applied";
 	}
 
-	async onOpen() {
+	onOpen(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass("job-tracker-modal");

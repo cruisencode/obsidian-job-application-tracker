@@ -21,8 +21,6 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl).setName("Job Application Tracker Settings").setHeading();
-
 		// Storage folders
 		new Setting(containerEl).setName("Folders & Storage").setHeading();
 

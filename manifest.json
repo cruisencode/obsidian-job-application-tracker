@@ -2,8 +2,8 @@
 	"id": "job-application-tracker",
 	"name": "Job Application Tracker",
 	"version": "1.0.0",
-	"minAppVersion": "1.5.0",
-	"description": "Visual job application pipeline, interview debrief hub, PDF attachment manager, and career search analytics.",
+	"minAppVersion": "1.7.2",
+	"description": "Track job applications, contacts, and interviews with Kanban, Table, List, and Sankey analytics dashboards.",
 	"author": "cruisencode",
 	"authorUrl": "https://github.com/cruisencode",
 	"isDesktopOnly": false

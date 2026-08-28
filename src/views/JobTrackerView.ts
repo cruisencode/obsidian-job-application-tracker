@@ -5,6 +5,7 @@ import {
 	TFile,
 	debounce,
 	Menu,
+	normalizePath,
 } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { JobApplication, JobStatus } from "../types";
@@ -80,7 +81,7 @@ export class JobTrackerView extends ItemView {
 
 		this.debouncedRefresh = debounce(
 			() => {
-				void this.loadAndRender();
+				this.loadAndRender();
 			},
 			300,
 			true
@@ -131,24 +132,23 @@ export class JobTrackerView extends ItemView {
 			})
 		);
 
-		await this.loadAndRender();
+		this.loadAndRender();
 	}
 
 	/**
 	 * Checks if a file is within the tracked application folder or has job-application frontmatter.
 	 */
 	private isTrackedFile(file: TFile): boolean {
-		const trackerFolder = this.plugin.settings.trackerFolderPath;
-		const interviewFolder = this.plugin.settings.interviewNotesFolderPath;
-		if (file.path.startsWith(trackerFolder + "/") || file.path.startsWith(interviewFolder + "/")) {
+		const appFolder = normalizePath(this.plugin.settings.trackerFolderPath);
+		if (file.path.startsWith(appFolder + "/") || file.path === appFolder) {
 			return true;
 		}
 		const cache = this.app.metadataCache.getFileCache(file);
 		return cache?.frontmatter?.type === "job-application";
 	}
 
-	async loadAndRender() {
-		this.applications = await this.plugin.appService.getAllApplications();
+	loadAndRender() {
+		this.applications = this.plugin.appService.getAllApplications();
 		this.metricsCache = null;
 		this.metricsCacheKey = "";
 		this.render();

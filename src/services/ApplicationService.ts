@@ -284,7 +284,7 @@ export class ApplicationService {
 	 */
 	getApplicationFromCache(file: TFile): JobApplication | null {
 		const cache = this.app.metadataCache.getFileCache(file);
-		const frontmatter = cache?.frontmatter as JobApplicationFrontMatter | undefined;
+		const frontmatter = cache?.frontmatter;
 
 		if (!frontmatter) {
 			return null;
@@ -334,7 +334,7 @@ export class ApplicationService {
 	/**
 	 * Get all job applications in the vault.
 	 */
-	async getAllApplications(): Promise<JobApplication[]> {
+	getAllApplications(): JobApplication[] {
 		const applications: JobApplication[] = [];
 		const folderPrefix = normalizePath(this.plugin.settings.trackerFolderPath);
 		const interviewFolderPrefix = normalizePath(this.plugin.settings.interviewNotesFolderPath);
@@ -391,7 +391,7 @@ export class ApplicationService {
 			const today = this.getTodayDateString();
 
 			await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
-				const previousStatus = fm.status as JobStatus | undefined;
+				const previousStatus = fm.status;
 				fm.status = newStatus;
 				fm.lastUpdated = today;
 
