@@ -1,6 +1,6 @@
 import { App, Modal, Notice, Setting, TFile } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
-import { InterviewRound, JobApplication, JobStatus } from "../types";
+import { JobApplication, JobStatus } from "../types";
 import { SelectApplicationModal } from "./UpdateStatusModal";
 
 /**
@@ -146,7 +146,7 @@ export class LogInterviewOutcomeModal extends Modal {
 					this.selectedInterviewId,
 					this.status,
 					this.outcomeNotes.trim() || undefined,
-					this.nextStage ? (this.nextStage as JobStatus) : undefined
+					this.nextStage || undefined
 				);
 				this.close();
 			} else {

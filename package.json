@@ -1,7 +1,7 @@
 {
   "name": "obsidian-job-application-tracker",
   "version": "1.0.0",
-  "description": "Visual job application pipeline, interview debrief hub, PDF attachment manager, and career search analytics for Obsidian.",
+  "description": "Visual job application pipeline, interview debrief hub, PDF attachment manager, and career search analytics.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
@@ -22,7 +22,6 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
-    "builtin-modules": "^3.3.0",
     "esbuild": "^0.20.0",
     "obsidian": "^1.7.2",
     "tslib": "^2.6.2",

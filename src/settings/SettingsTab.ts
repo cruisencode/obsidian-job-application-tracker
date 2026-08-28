@@ -21,10 +21,10 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "Job Application Tracker Settings" });
+		new Setting(containerEl).setName("Job Application Tracker Settings").setHeading();
 
 		// Storage folders
-		containerEl.createEl("h3", { text: "Folders & Storage" });
+		new Setting(containerEl).setName("Folders & Storage").setHeading();
 
 		new Setting(containerEl)
 			.setName("Applications Folder")
@@ -75,7 +75,7 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 			);
 
 		// Defaults & Display
-		containerEl.createEl("h3", { text: "Display & Pipeline Defaults" });
+		new Setting(containerEl).setName("Display & Pipeline Defaults").setHeading();
 
 		new Setting(containerEl)
 			.setName("Default View Location")
@@ -124,8 +124,8 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 			});
 
 		// Interview Prep Template
-		containerEl.createEl("h3", { text: "Interview Prep Note Template" });
-		const templateDesc = document.createDocumentFragment();
+		new Setting(containerEl).setName("Interview Prep Note Template").setHeading();
+		const templateDesc = createFragment();
 		templateDesc.append(
 			"Template used when creating an Interview Prep note. Supported placeholders:",
 			templateDesc.createEl("br"),

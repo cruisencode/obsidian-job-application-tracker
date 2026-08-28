@@ -38,7 +38,7 @@ export class ConfirmDeleteModal extends Modal {
 			.addButton((btn) =>
 				btn
 					.setButtonText(this.confirmButtonText)
-					.setWarning()
+					.setDestructive()
 					.onClick(async () => {
 						this.close();
 						await this.onConfirm();

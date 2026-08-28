@@ -169,7 +169,6 @@ export class SankeyDiagram {
 		const paddingLeft = Math.max(120, Math.min(220, Math.ceil(maxLeftChars * 7.5) + 24));
 		const paddingRight = Math.max(120, Math.min(220, Math.ceil(maxRightChars * 7.5) + 24));
 		const paddingY = 40;
-		const nodeWidth = 14;
 		const nodeGap = 16;
 
 		const baseWidth = Math.max(880, maxLayer * 200 + paddingLeft + paddingRight);
@@ -227,28 +226,24 @@ export class SankeyDiagram {
 			}
 		}
 
-		// 4. Build SVG
-		const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-		svg.setAttribute("viewBox", `0 0 ${baseWidth} ${baseHeight}`);
-		svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-		svg.setAttribute("class", "job-tracker-native-sankey-svg");
-		svg.style.width = "100%";
-		svg.style.maxWidth = "100%";
-		svg.style.height = "auto";
-		svg.style.display = "block";
+		// 4. Build SVG with Obsidian's createSvg helper
+		const svg = container.createSvg("svg", {
+			cls: "job-tracker-native-sankey-svg",
+			attr: {
+				viewBox: `0 0 ${baseWidth} ${baseHeight}`,
+				preserveAspectRatio: "xMidYMid meet",
+			},
+		});
 
 		// Definitions for gradients & filters
-		const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-		svg.appendChild(defs);
+		const defs = svg.createSvg("defs");
 
 		// Track offsets for multiple links connecting to/from the same node
 		const sourceOffsets = new Map<string, number>();
 		const targetOffsets = new Map<string, number>();
 
 		// Draw Links (Ribbons)
-		const linksGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-		linksGroup.setAttribute("class", "job-tracker-sankey-links");
-		svg.appendChild(linksGroup);
+		const linksGroup = svg.createSvg("g", { cls: "job-tracker-sankey-links" });
 
 		for (const link of links) {
 			const sourceNode = nodeMap.get(link.source);
@@ -281,33 +276,41 @@ export class SankeyDiagram {
 			`;
 
 			// Create linear gradient for link
-			const gradId = `sankey-grad-${Math.random().toString(36).substr(2, 9)}`;
-			const grad = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
-			grad.setAttribute("id", gradId);
-			grad.setAttribute("gradientUnits", "userSpaceOnUse");
-			grad.setAttribute("x1", `${x0}`);
-			grad.setAttribute("y1", `${y0}`);
-			grad.setAttribute("x2", `${x1}`);
-			grad.setAttribute("y2", `${y1}`);
+			const gradId = `sankey-grad-${Math.random().toString(36).substring(2, 11)}`;
+			const grad = defs.createSvg("linearGradient", {
+				attr: {
+					id: gradId,
+					gradientUnits: "userSpaceOnUse",
+					x1: `${x0}`,
+					y1: `${y0}`,
+					x2: `${x1}`,
+					y2: `${y1}`,
+				},
+			});
 
-			const stop1 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
-			stop1.setAttribute("offset", "0%");
-			stop1.setAttribute("stop-color", sourceNode.color);
-			stop1.setAttribute("stop-opacity", "0.45");
+			const stop1 = grad.createSvg("stop", {
+				attr: {
+					offset: "0%",
+					"stop-color": sourceNode.color,
+					"stop-opacity": "0.45",
+				},
+			});
 
-			const stop2 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
-			stop2.setAttribute("offset", "100%");
-			stop2.setAttribute("stop-color", targetNode.color);
-			stop2.setAttribute("stop-opacity", "0.45");
+			const stop2 = grad.createSvg("stop", {
+				attr: {
+					offset: "100%",
+					"stop-color": targetNode.color,
+					"stop-opacity": "0.45",
+				},
+			});
 
-			grad.appendChild(stop1);
-			grad.appendChild(stop2);
-			defs.appendChild(grad);
-
-			const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-			path.setAttribute("d", pathData);
-			path.setAttribute("fill", `url(#${gradId})`);
-			path.setAttribute("class", "job-tracker-sankey-ribbon");
+			const path = linksGroup.createSvg("path", {
+				cls: "job-tracker-sankey-ribbon",
+				attr: {
+					d: pathData,
+					fill: `url(#${gradId})`,
+				},
+			});
 
 			// Interactive hover
 			path.onmouseenter = () => {
@@ -319,68 +322,62 @@ export class SankeyDiagram {
 				stop2.setAttribute("stop-opacity", "0.45");
 			};
 
-			const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
-			title.textContent = `${link.source} → ${link.target}: ${link.value} application${link.value === 1 ? "" : "s"}`;
-			path.appendChild(title);
-
-			linksGroup.appendChild(path);
+			const linkTitle = path.createSvg("title");
+			linkTitle.textContent = `${link.source} → ${link.target}: ${link.value} application${link.value === 1 ? "" : "s"}`;
 		}
 
 		// Draw Nodes
-		const nodesGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-		nodesGroup.setAttribute("class", "job-tracker-sankey-nodes");
-		svg.appendChild(nodesGroup);
+		const nodesGroup = svg.createSvg("g", { cls: "job-tracker-sankey-nodes" });
 
 		for (const node of nodeMap.values()) {
-			const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-			g.setAttribute("class", "job-tracker-sankey-node");
+			const g = nodesGroup.createSvg("g", { cls: "job-tracker-sankey-node" });
 
 			// Rect
-			const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-			rect.setAttribute("x", `${node.x}`);
-			rect.setAttribute("y", `${node.y}`);
-			rect.setAttribute("width", `${node.width}`);
-			rect.setAttribute("height", `${node.height}`);
-			rect.setAttribute("rx", "3");
-			rect.setAttribute("ry", "3");
-			rect.setAttribute("fill", node.color);
-			rect.setAttribute("stroke", "var(--background-primary, #ffffff)");
-			rect.setAttribute("stroke-width", "1");
-			g.appendChild(rect);
+			g.createSvg("rect", {
+				attr: {
+					x: `${node.x}`,
+					y: `${node.y}`,
+					width: `${node.width}`,
+					height: `${node.height}`,
+					rx: "3",
+					ry: "3",
+					fill: node.color,
+					stroke: "var(--background-primary, #ffffff)",
+					"stroke-width": "1",
+				},
+			});
 
 			// Text Label
-			const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
 			const isRightSide = node.layer === maxLayer;
-
-			text.setAttribute("font-size", "11px");
-			text.setAttribute("font-family", "var(--font-default, sans-serif)");
-			text.setAttribute("fill", "var(--text-normal, #dcddde)");
-			text.setAttribute("font-weight", "500");
+			let labelX = `${node.x + node.width / 2}`;
+			let labelY = `${Math.max(14, node.y - 6)}`;
+			let textAnchor = "middle";
 
 			if (isRightSide) {
-				text.setAttribute("x", `${node.x + node.width + 8}`);
-				text.setAttribute("y", `${node.y + node.height / 2 + 4}`);
-				text.setAttribute("text-anchor", "start");
+				labelX = `${node.x + node.width + 8}`;
+				labelY = `${node.y + node.height / 2 + 4}`;
+				textAnchor = "start";
 			} else if (node.layer === 0) {
-				text.setAttribute("x", `${node.x - 8}`);
-				text.setAttribute("y", `${node.y + node.height / 2 + 4}`);
-				text.setAttribute("text-anchor", "end");
-			} else {
-				text.setAttribute("x", `${node.x + node.width / 2}`);
-				text.setAttribute("y", `${Math.max(14, node.y - 6)}`);
-				text.setAttribute("text-anchor", "middle");
+				labelX = `${node.x - 8}`;
+				labelY = `${node.y + node.height / 2 + 4}`;
+				textAnchor = "end";
 			}
 
-			text.textContent = this.formatDisplayLabel(node.label, node.value);
-			g.appendChild(text);
+			const labelText = g.createSvg("text", {
+				attr: {
+					"font-size": "11px",
+					"font-family": "var(--font-default, sans-serif)",
+					fill: "var(--text-normal, #dcddde)",
+					"font-weight": "500",
+					x: labelX,
+					y: labelY,
+					"text-anchor": textAnchor,
+				},
+			});
+			labelText.textContent = this.formatDisplayLabel(node.label, node.value);
 
-			const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
-			title.textContent = `${node.label}: ${node.value} application${node.value === 1 ? "" : "s"}`;
-			g.appendChild(title);
-
-			nodesGroup.appendChild(g);
+			const nodeTitle = g.createSvg("title");
+			nodeTitle.textContent = `${node.label}: ${node.value} application${node.value === 1 ? "" : "s"}`;
 		}
-
-		container.appendChild(svg);
 	}
 }

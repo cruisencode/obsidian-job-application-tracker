@@ -93,4 +93,26 @@ export interface JobApplicationTrackerSettings {
 	openViewLocation: "tab" | "right-sidebar" | "left-sidebar";
 }
 
+export interface JobApplicationFrontMatter {
+	type?: string;
+	company?: string;
+	role?: string;
+	status?: JobStatus;
+	dateApplied?: string;
+	lastUpdated?: string;
+	location?: string;
+	workplaceType?: WorkplaceType;
+	employmentType?: EmploymentType;
+	salary?: string;
+	jobUrl?: string;
+	source?: string;
+	followUpDate?: string;
+	jobDescriptionFile?: string;
+	tags?: string[];
+	contacts?: Contact[];
+	interviews?: InterviewRound[];
+	statusHistory?: StatusHistoryEntry[];
+	[key: string]: unknown;
+}
+
 

@@ -46,13 +46,10 @@ export class MetricsRenderer {
 		// 2. Section: Sankey Pipeline Flow Diagram
 		const sankeySection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
 		sankeySection.createEl("h4", { text: "Job Search Sankey Diagram" });
-		const sankeyDesc = sankeySection.createEl("p", {
+		sankeySection.createEl("p", {
 			text: "Visual flow of your job hunt based on actual statuses entered/exited, from source to final outcomes.",
-			cls: "text-muted",
+			cls: "text-muted job-tracker-sankey-desc",
 		});
-		sankeyDesc.style.marginTop = "0";
-		sankeyDesc.style.marginBottom = "14px";
-		sankeyDesc.style.fontSize = "0.82em";
 
 		const sankeyContent = sankeySection.createDiv({ cls: "job-tracker-sankey-container" });
 		this.renderSankeyDiagram(sankeyContent);
@@ -139,11 +136,11 @@ export class MetricsRenderer {
 					cls: "job-tracker-activity-comp-link",
 					attr: { role: "link", tabindex: "0" },
 				});
-				compLink.onclick = () => this.view.openNote(entry.filePath);
+				compLink.onclick = () => { void this.view.openNote(entry.filePath); };
 				compLink.onkeydown = (e) => {
 					if (e.key === "Enter") {
 						e.preventDefault();
-						this.view.openNote(entry.filePath);
+						void this.view.openNote(entry.filePath);
 					}
 				};
 

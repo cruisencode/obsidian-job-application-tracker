@@ -23,11 +23,13 @@ export class SelectApplicationModal extends FuzzySuggestModal<JobApplication> {
 		this.setPlaceholder("Type to search application by company or role...");
 	}
 
-	async onOpen() {
-		if (this.applications.length === 0) {
-			this.applications = await this.plugin.appService.getAllApplications();
-		}
+	override onOpen() {
 		super.onOpen();
+		if (this.applications.length === 0) {
+			void this.plugin.appService.getAllApplications().then((apps) => {
+				this.applications = apps;
+			});
+		}
 	}
 
 	getItems(): JobApplication[] {

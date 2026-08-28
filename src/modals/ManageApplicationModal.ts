@@ -1,6 +1,6 @@
 import { App, Modal, Notice, Setting, TFile, setIcon } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
-import { Contact, InterviewRound, JobApplication, JobStatus } from "../types";
+import { JobApplication } from "../types";
 import { SelectApplicationModal } from "./UpdateStatusModal";
 import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 import { AddContactModal } from "./AddContactModal";
@@ -66,8 +66,7 @@ export class ManageApplicationModal extends Modal {
 		});
 
 		// Tab navigation buttons
-		const tabRow = contentEl.createDiv({ cls: "job-tracker-view-switcher" });
-		tabRow.style.marginBottom = "16px";
+		const tabRow = contentEl.createDiv({ cls: "job-tracker-view-switcher job-tracker-modal-switcher" });
 
 		const overviewTabBtn = tabRow.createEl("button", {
 			cls: `job-tracker-mode-btn ${this.activeTab === "overview" ? "is-active" : ""}`,
@@ -152,7 +151,7 @@ export class ManageApplicationModal extends Modal {
 			.addButton((btn) =>
 				btn
 					.setButtonText("Delete Application")
-					.setWarning()
+					.setDestructive()
 					.onClick(() => {
 						new ConfirmDeleteModal(
 							this.app,
@@ -181,7 +180,7 @@ export class ManageApplicationModal extends Modal {
 	renderContactsTab(container: HTMLElement) {
 		if (!this.application) return;
 
-		const topSetting = new Setting(container)
+		new Setting(container)
 			.setName("Key Contacts")
 			.setDesc("Manage recruiters, interviewers, and team members connected to this role.")
 			.addButton((btn) =>
@@ -208,7 +207,6 @@ export class ManageApplicationModal extends Modal {
 
 		for (const contact of contacts) {
 			const itemCard = listDiv.createDiv({ cls: "job-tracker-list-item" });
-			itemCard.style.marginBottom = "8px";
 
 			const infoDiv = itemCard.createDiv({ cls: "job-tracker-list-main" });
 			const nameRow = infoDiv.createDiv({ cls: "job-tracker-list-title-row" });
@@ -283,7 +281,6 @@ export class ManageApplicationModal extends Modal {
 
 		for (const iv of interviews) {
 			const itemCard = listDiv.createDiv({ cls: "job-tracker-list-item" });
-			itemCard.style.marginBottom = "8px";
 
 			const infoDiv = itemCard.createDiv({ cls: "job-tracker-list-main" });
 			const titleRow = infoDiv.createDiv({ cls: "job-tracker-list-title-row" });

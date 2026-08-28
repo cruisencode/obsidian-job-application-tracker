@@ -95,6 +95,10 @@
 	border: 1px solid var(--background-modifier-border);
 }
 
+.job-tracker-modal-switcher {
+	margin-bottom: 16px;
+}
+
 .job-tracker-mode-btn {
 	background: transparent;
 	border: none;
@@ -817,6 +821,12 @@
 	font-size: 0.95em;
 	color: var(--text-normal);
 	font-weight: 600;
+}
+
+.job-tracker-sankey-desc {
+	margin-top: 0;
+	margin-bottom: 14px;
+	font-size: 0.82em;
 }
 
 /* Sankey Diagram Container */

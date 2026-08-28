@@ -34,11 +34,11 @@ export class ListRenderer {
 				cls: "job-tracker-list-company",
 				attr: { role: "link", tabindex: "0" },
 			});
-			compLink.onclick = () => this.view.openNote(app.filePath);
+			compLink.onclick = () => { void this.view.openNote(app.filePath); };
 			compLink.onkeydown = (e) => {
 				if (e.key === "Enter") {
 					e.preventDefault();
-					this.view.openNote(app.filePath);
+					void this.view.openNote(app.filePath);
 				}
 			};
 
@@ -75,11 +75,11 @@ export class ListRenderer {
 					cls: "job-tracker-list-highlight job-tracker-clickable",
 					attr: { "aria-label": `Open attached JD: ${app.jobDescriptionFile}`, role: "button", tabindex: "0" },
 				});
-				jdPill.onclick = () => this.view.openNote(app.jobDescriptionFile!);
+				jdPill.onclick = () => { void this.view.openNote(app.jobDescriptionFile!); };
 				jdPill.onkeydown = (e) => {
 					if (e.key === "Enter" || e.key === " ") {
 						e.preventDefault();
-						this.view.openNote(app.jobDescriptionFile!);
+						void this.view.openNote(app.jobDescriptionFile!);
 					}
 				};
 			}

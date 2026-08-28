@@ -104,12 +104,12 @@ export class KanbanRenderer {
 		});
 		companyLink.onclick = (e) => {
 			e.preventDefault();
-			this.view.openNote(app.filePath);
+			void this.view.openNote(app.filePath);
 		};
 		companyLink.onkeydown = (e) => {
 			if (e.key === "Enter") {
 				e.preventDefault();
-				this.view.openNote(app.filePath);
+				void this.view.openNote(app.filePath);
 			}
 		};
 
@@ -152,11 +152,11 @@ export class KanbanRenderer {
 			text: app.role,
 			attr: { tabindex: "0", role: "button", "aria-label": `Open note: ${app.role}` },
 		});
-		roleEl.onclick = () => this.view.openNote(app.filePath);
+		roleEl.onclick = () => { void this.view.openNote(app.filePath); };
 		roleEl.onkeydown = (e) => {
 			if (e.key === "Enter") {
 				e.preventDefault();
-				this.view.openNote(app.filePath);
+				void this.view.openNote(app.filePath);
 			}
 		};
 
@@ -195,13 +195,13 @@ export class KanbanRenderer {
 			jdBadge.createSpan({ text: isPdf ? "PDF JD" : "MD JD" });
 			jdBadge.onclick = (e) => {
 				e.stopPropagation();
-				this.view.openNote(app.jobDescriptionFile!);
+				void this.view.openNote(app.jobDescriptionFile!);
 			};
 			jdBadge.onkeydown = (e) => {
 				if (e.key === "Enter" || e.key === " ") {
 					e.preventDefault();
 					e.stopPropagation();
-					this.view.openNote(app.jobDescriptionFile!);
+					void this.view.openNote(app.jobDescriptionFile!);
 				}
 			};
 		}

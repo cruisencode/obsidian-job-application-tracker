@@ -80,11 +80,11 @@ export class TableRenderer {
 				cls: "job-tracker-company-link",
 				attr: { role: "link", tabindex: "0" },
 			});
-			cLink.onclick = () => this.view.openNote(app.filePath);
+			cLink.onclick = () => { void this.view.openNote(app.filePath); };
 			cLink.onkeydown = (e) => {
 				if (e.key === "Enter") {
 					e.preventDefault();
-					this.view.openNote(app.filePath);
+					void this.view.openNote(app.filePath);
 				}
 			};
 

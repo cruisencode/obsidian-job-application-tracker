@@ -1,5 +1,5 @@
 import { App, Notice, TFile, TFolder, normalizePath, stringifyYaml } from "obsidian";
-import { Contact, EmploymentType, FINAL_STATUSES, InterviewRound, JobApplication, JobStatus, StatusHistoryEntry, WorkplaceType } from "../types";
+import { Contact, EmploymentType, FINAL_STATUSES, InterviewRound, JobApplication, JobApplicationFrontMatter, JobStatus, StatusHistoryEntry, WorkplaceType } from "../types";
 import JobApplicationTrackerPlugin from "../main";
 
 export class ApplicationService {
@@ -80,7 +80,7 @@ export class ApplicationService {
 	 */
 	sanitizeFileName(name: string): string {
 		return name
-			.replace(/[\\/:*?"<>|#^\[\]]/g, "-")
+			.replace(/[\\/:*?"<>|#^[\]]/g, "-")
 			.replace(/\s+/g, " ")
 			.trim();
 	}
@@ -238,7 +238,7 @@ export class ApplicationService {
 				},
 			];
 
-			const frontmatterObj: Record<string, any> = {
+			const frontmatterObj: JobApplicationFrontMatter = {
 				type: "job-application",
 				company: data.company,
 				role: data.role,
@@ -246,12 +246,12 @@ export class ApplicationService {
 				dateApplied: dateApplied,
 				lastUpdated: today,
 				location: data.location || "",
-				workplaceType: data.workplaceType || "",
-				employmentType: data.employmentType || "",
+				workplaceType: data.workplaceType || undefined,
+				employmentType: data.employmentType || undefined,
 				salary: data.salary || "",
 				jobUrl: data.jobUrl || "",
 				source: data.source || "",
-				followUpDate: data.followUpDate || "",
+				followUpDate: data.followUpDate || undefined,
 				jobDescriptionFile: data.jobDescriptionFile || "",
 				tags: ["job-application"],
 				contacts: data.contacts || [],
@@ -284,7 +284,7 @@ export class ApplicationService {
 	 */
 	getApplicationFromCache(file: TFile): JobApplication | null {
 		const cache = this.app.metadataCache.getFileCache(file);
-		const frontmatter = cache?.frontmatter;
+		const frontmatter = cache?.frontmatter as JobApplicationFrontMatter | undefined;
 
 		if (!frontmatter) {
 			return null;
@@ -303,7 +303,7 @@ export class ApplicationService {
 
 		// Must either be explicitly marked type: job-application, or have company, role, and status
 		const isExplicitApp = frontmatter.type === "job-application";
-		const hasAppFields = frontmatter.company && (frontmatter.role || frontmatter.status);
+		const hasAppFields = Boolean(frontmatter.company && (frontmatter.role || frontmatter.status));
 
 		if (!isExplicitApp && !hasAppFields) {
 			return null;
@@ -317,12 +317,12 @@ export class ApplicationService {
 			dateApplied: frontmatter.dateApplied || "",
 			lastUpdated: frontmatter.lastUpdated || "",
 			location: frontmatter.location || "",
-			workplaceType: frontmatter.workplaceType || undefined,
-			employmentType: frontmatter.employmentType || undefined,
+			workplaceType: frontmatter.workplaceType,
+			employmentType: frontmatter.employmentType,
 			salary: frontmatter.salary || "",
 			jobUrl: frontmatter.jobUrl || "",
 			source: frontmatter.source || "",
-			followUpDate: frontmatter.followUpDate || undefined,
+			followUpDate: frontmatter.followUpDate,
 			jobDescriptionFile: frontmatter.jobDescriptionFile || "",
 			contacts: Array.isArray(frontmatter.contacts) ? frontmatter.contacts : [],
 			interviews: Array.isArray(frontmatter.interviews) ? frontmatter.interviews : [],
@@ -362,6 +362,7 @@ export class ApplicationService {
 		}
 
 		// 2. Scan remaining vault files that explicitly declare type: job-application in frontmatter
+		// Uses in-memory metadataCache for zero-IO performance while allowing custom note locations
 		const files = this.app.vault.getMarkdownFiles();
 		for (const file of files) {
 			if (processedPaths.has(file.path)) continue;
@@ -389,8 +390,8 @@ export class ApplicationService {
 		try {
 			const today = this.getTodayDateString();
 
-			await this.app.fileManager.processFrontMatter(file, (fm) => {
-				const previousStatus = fm.status as JobStatus;
+			await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
+				const previousStatus = fm.status as JobStatus | undefined;
 				fm.status = newStatus;
 				fm.lastUpdated = today;
 
@@ -400,15 +401,15 @@ export class ApplicationService {
 
 				// If previous status was a final status and new status is also a final status,
 				// replace the previous final status entry instead of chaining multiple final statuses.
-				const isPrevFinal = FINAL_STATUSES.includes(previousStatus);
+				const isPrevFinal = previousStatus ? FINAL_STATUSES.includes(previousStatus) : false;
 				const isNewFinal = FINAL_STATUSES.includes(newStatus);
 
 				if (isPrevFinal && isNewFinal && fm.statusHistory.length > 0) {
 					const lastEntry = fm.statusHistory[fm.statusHistory.length - 1];
-					if (FINAL_STATUSES.includes(lastEntry.status)) {
+					if (lastEntry.status && FINAL_STATUSES.includes(lastEntry.status)) {
 						lastEntry.status = newStatus;
 						lastEntry.date = today;
-						lastEntry.note = note || `Final status changed from ${previousStatus} to ${newStatus}`;
+						lastEntry.note = note || `Final status changed from ${previousStatus || "previous"} to ${newStatus}`;
 						return;
 					}
 				}
@@ -451,7 +452,7 @@ export class ApplicationService {
 		try {
 			const today = this.getTodayDateString();
 
-			await this.app.fileManager.processFrontMatter(file, (fm) => {
+			await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
 				if (fields.company !== undefined) fm.company = fields.company;
 				if (fields.role !== undefined) fm.role = fields.role;
 				if (fields.status !== undefined) fm.status = fields.status;
@@ -510,7 +511,7 @@ export class ApplicationService {
 	async updateApplicationFields(file: TFile, fields: Partial<JobApplication>): Promise<void> {
 		const today = this.getTodayDateString();
 
-		await this.app.fileManager.processFrontMatter(file, (fm) => {
+		await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
 			if (fields.company !== undefined) fm.company = fields.company;
 			if (fields.role !== undefined) fm.role = fields.role;
 			if (fields.status !== undefined) fm.status = fields.status;
@@ -536,7 +537,7 @@ export class ApplicationService {
 		try {
 			const today = this.getTodayDateString();
 
-			await this.app.fileManager.processFrontMatter(file, (fm) => {
+			await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
 				if (!Array.isArray(fm.contacts)) {
 					fm.contacts = [];
 				}
@@ -630,7 +631,7 @@ export class ApplicationService {
 
 			const today = this.getTodayDateString();
 
-			await this.app.fileManager.processFrontMatter(file, (fm) => {
+			await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
 				if (!Array.isArray(fm.interviews)) {
 					fm.interviews = [];
 				}
@@ -639,7 +640,8 @@ export class ApplicationService {
 
 				// Bump status to Interviewing unless already in Interviewing or a later status (e.g. Offer)
 				const laterOrCurrentStatuses: JobStatus[] = ["Interviewing", "Offer", ...FINAL_STATUSES];
-				if (autoUpdateStatus && !laterOrCurrentStatuses.includes(fm.status)) {
+				const currentStatus = fm.status || "Applied";
+				if (autoUpdateStatus && !laterOrCurrentStatuses.includes(currentStatus)) {
 					fm.status = "Interviewing";
 					if (!Array.isArray(fm.statusHistory)) fm.statusHistory = [];
 					fm.statusHistory.push({
@@ -691,7 +693,7 @@ export class ApplicationService {
 		try {
 			const today = this.getTodayDateString();
 
-			await this.app.fileManager.processFrontMatter(file, (fm) => {
+			await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
 				if (Array.isArray(fm.interviews)) {
 					const iv = fm.interviews.find((i: InterviewRound) => i.id === interviewId);
 					if (iv) {
@@ -735,12 +737,12 @@ export class ApplicationService {
 	}
 
 	/**
-	 * Moves an application file to Obsidian trash.
+	 * Moves an application file to Obsidian trash respecting user deletion preference.
 	 */
 	async deleteApplication(file: TFile): Promise<void> {
 		try {
 			const name = file.basename;
-			await this.app.vault.trash(file, true);
+			await this.app.fileManager.trashFile(file);
 			new Notice(`Moved "${name}" to trash.`);
 
 		} catch (err) {
@@ -819,7 +821,7 @@ export class ApplicationService {
 			const today = this.getTodayDateString();
 			let freshContacts: Contact[] = [];
 			let freshInterviews: InterviewRound[] = [];
-			await this.app.fileManager.processFrontMatter(file, (fm) => {
+			await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
 				if (Array.isArray(fm.contacts)) {
 					const idx = fm.contacts.findIndex((c: Contact) => c.id === contactId);
 					if (idx !== -1) {
@@ -847,7 +849,7 @@ export class ApplicationService {
 			const today = this.getTodayDateString();
 			let freshContacts: Contact[] = [];
 			let freshInterviews: InterviewRound[] = [];
-			await this.app.fileManager.processFrontMatter(file, (fm) => {
+			await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
 				if (Array.isArray(fm.contacts)) {
 					fm.contacts = fm.contacts.filter((c: Contact) => c.id !== contactId);
 				}
@@ -872,7 +874,7 @@ export class ApplicationService {
 			const today = this.getTodayDateString();
 			let freshContacts: Contact[] = [];
 			let freshInterviews: InterviewRound[] = [];
-			await this.app.fileManager.processFrontMatter(file, (fm) => {
+			await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
 				if (Array.isArray(fm.interviews)) {
 					const idx = fm.interviews.findIndex((i: InterviewRound) => i.id === interviewId);
 					if (idx !== -1) {
@@ -900,7 +902,7 @@ export class ApplicationService {
 			const today = this.getTodayDateString();
 			let freshContacts: Contact[] = [];
 			let freshInterviews: InterviewRound[] = [];
-			await this.app.fileManager.processFrontMatter(file, (fm) => {
+			await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
 				if (Array.isArray(fm.interviews)) {
 					fm.interviews = fm.interviews.filter((i: InterviewRound) => i.id !== interviewId);
 				}

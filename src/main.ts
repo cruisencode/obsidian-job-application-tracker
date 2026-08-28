@@ -1,4 +1,4 @@
-import { MarkdownView, Plugin, TFile, WorkspaceLeaf } from "obsidian";
+import { Plugin, TFile, WorkspaceLeaf } from "obsidian";
 import { JobApplicationTrackerSettings, JobApplication } from "./types";
 import { DEFAULT_SETTINGS, VIEW_TYPE_JOB_TRACKER } from "./constants";
 import { ApplicationService } from "./services/ApplicationService";
@@ -30,7 +30,7 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 
 		// Ribbon icon: Opens the Job Application Tracker dashboard
 		this.addRibbonIcon("briefcase", "Job Application Tracker", () => {
-			this.activateView();
+			void this.activateView();
 		});
 
 		// Command: Open Job Application Tracker view (default location)
@@ -38,7 +38,7 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			id: "open-job-tracker-view",
 			name: "Open tracker dashboard (Kanban / Table / List / Metrics)",
 			callback: () => {
-				this.activateView();
+				void this.activateView();
 			},
 		});
 
@@ -47,7 +47,7 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			id: "open-job-tracker-main-tab",
 			name: "Open tracker dashboard in Main Center Tab",
 			callback: () => {
-				this.activateView("tab");
+				void this.activateView("tab");
 			},
 		});
 
@@ -56,7 +56,7 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			id: "open-job-tracker-sidebar",
 			name: "Open tracker dashboard in Sidebar",
 			callback: () => {
-				this.activateView("right-sidebar");
+				void this.activateView("right-sidebar");
 			},
 		});
 
@@ -215,8 +215,8 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 	onunload() {}
 
 	async loadSettings() {
-		const data = await this.loadData();
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+		const data = (await this.loadData()) as Partial<JobApplicationTrackerSettings> | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, data || {});
 		if (!Array.isArray(this.settings.statuses) || this.settings.statuses.length === 0) {
 			this.settings.statuses = [...DEFAULT_SETTINGS.statuses];
 		}

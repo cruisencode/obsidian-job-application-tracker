@@ -80,7 +80,7 @@ export class JobTrackerView extends ItemView {
 
 		this.debouncedRefresh = debounce(
 			() => {
-				this.loadAndRender();
+				void this.loadAndRender();
 			},
 			300,
 			true
