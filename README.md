@@ -3,7 +3,7 @@
 An all-in-one job application pipeline and career search command center for [Obsidian](https://obsidian.md). Track applications across customizable stages, manage key contacts and recruiters, schedule multi-round interview pipelines, generate rich interview prep & debrief notes from customizable templates, attach and view job description PDFs/MD files in collapsible callouts, track follow-up deadlines & workplace models (Remote/Hybrid/On-site), and visualize your search pipeline with Kanban, Table, List, and Metrics views (including a pure native SVG Sankey diagram).
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Obsidian](https://img.shields.io/badge/Obsidian-v0.15.0%2B-purple.svg)
+![Obsidian](https://img.shields.io/badge/Obsidian-v1.7.2%2B-purple.svg)
 
 ---
 
