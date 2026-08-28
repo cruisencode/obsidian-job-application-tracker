@@ -14,8 +14,8 @@ import { ConfirmDeleteModal } from "./modals/ConfirmDeleteModal";
 import { JobTrackerView } from "./views/JobTrackerView";
 
 export default class JobApplicationTrackerPlugin extends Plugin {
-	settings: JobApplicationTrackerSettings;
-	appService: ApplicationService;
+	declare settings: JobApplicationTrackerSettings;
+	appService!: ApplicationService;
 
 	async onload() {
 		await this.loadSettings();

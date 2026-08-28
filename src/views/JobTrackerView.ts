@@ -575,7 +575,7 @@ export class JobTrackerView extends ItemView {
 		return this.metricsCache;
 	}
 
-	showCardMenu(e: MouseEvent, app: JobApplication) {
+	showCardMenu(e: MouseEvent | KeyboardEvent, app: JobApplication) {
 		const menu = new Menu();
 
 		menu.addItem((item) =>
@@ -662,7 +662,15 @@ export class JobTrackerView extends ItemView {
 				})
 		);
 
-		menu.showAtMouseEvent(e);
+		if (e instanceof MouseEvent) {
+			menu.showAtMouseEvent(e);
+		} else {
+			const target = e.target as HTMLElement;
+			const rect = target?.getBoundingClientRect?.();
+			if (rect) {
+				menu.showAtPosition({ x: rect.left, y: rect.bottom });
+			}
+		}
 	}
 
 	async openNote(filePath: string) {

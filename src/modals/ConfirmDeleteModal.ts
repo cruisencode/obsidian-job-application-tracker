@@ -1,3 +1,5 @@
+import { App, Modal, Setting } from "obsidian";
+
 /**
  * Confirmation dialog for destructive actions (deleting applications, contacts, or interviews).
  */
