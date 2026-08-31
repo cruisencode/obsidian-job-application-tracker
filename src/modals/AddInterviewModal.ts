@@ -186,8 +186,8 @@ export class AddInterviewModal extends Modal {
 
 				this.close();
 
-				// If prep note was generated, open it for immediate prep
-				if (result.prepFile) {
+				// If prep note was generated, open it for immediate prep only if the main tracker page is not open in the main page section
+				if (result.prepFile && !this.plugin.isTrackerViewOpenInMain()) {
 					const leaf = this.app.workspace.getLeaf(false);
 					await leaf.openFile(result.prepFile);
 				}

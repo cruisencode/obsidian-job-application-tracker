@@ -155,13 +155,13 @@ export class JobTrackerView extends ItemView {
 	}
 
 	render() {
-		const { containerEl } = this;
-		containerEl.empty();
-		containerEl.addClass("job-tracker-view");
+		const { contentEl } = this;
+		contentEl.empty();
+		contentEl.addClass("job-tracker-view");
 
-		this.renderHeader(containerEl);
+		this.renderHeader(contentEl);
 
-		const contentContainer = containerEl.createDiv({ cls: "job-tracker-content-area" });
+		const contentContainer = contentEl.createDiv({ cls: "job-tracker-content-area" });
 
 		const filteredApps = this.getFilteredAndSortedApps();
 
@@ -309,7 +309,7 @@ export class JobTrackerView extends ItemView {
 	}
 
 	renderContentOnly() {
-		const contentArea = this.containerEl.querySelector(".job-tracker-content-area");
+		const contentArea = this.contentEl.querySelector(".job-tracker-content-area");
 		if (contentArea instanceof HTMLElement) {
 			contentArea.empty();
 			const filteredApps = this.getFilteredAndSortedApps();

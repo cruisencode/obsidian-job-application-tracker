@@ -304,9 +304,11 @@ export class NewApplicationModal extends Modal {
 
 			this.close();
 
-			// Open the newly created note in active workspace
-			const leaf = this.app.workspace.getLeaf(false);
-			await leaf.openFile(file);
+			// Open the newly created note in active workspace only if the main tracker page is not open in the main page section
+			if (!this.plugin.isTrackerViewOpenInMain()) {
+				const leaf = this.app.workspace.getLeaf(false);
+				await leaf.openFile(file);
+			}
 		} catch (err) {
 			console.error("Job Tracker: Modal action failed:", err);
 			new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
