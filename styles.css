@@ -37,6 +37,10 @@
 	display: flex;
 	flex-direction: column;
 	height: 100%;
+	width: 100%;
+	max-height: 100%;
+	min-height: 0;
+	box-sizing: border-box;
 	padding: 12px;
 	overflow: hidden;
 	background-color: var(--background-primary);
@@ -201,9 +205,11 @@
 
 /* Content Area */
 .job-tracker-content-area {
-	flex: 1;
+	flex: 1 1 auto;
+	min-height: 0;
 	overflow: auto;
 	margin-top: 10px;
+	-webkit-overflow-scrolling: touch;
 }
 
 /* Empty State */
@@ -1080,6 +1086,10 @@
 }
 
 @media (max-width: 600px) {
+	.job-tracker-view {
+		padding: 8px 10px;
+	}
+
 	.job-tracker-header-top {
 		flex-direction: column;
 		align-items: flex-start;
@@ -1102,4 +1112,8 @@
 	.job-tracker-kanban-column {
 		min-width: 220px;
 	}
+}
+
+.is-mobile .job-tracker-view {
+	padding: 8px 10px;
 }

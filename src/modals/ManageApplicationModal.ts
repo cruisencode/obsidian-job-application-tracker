@@ -122,7 +122,9 @@ export class ManageApplicationModal extends Modal {
 					this.close();
 					const file = this.plugin.appService.resolveFile(this.application!.filePath);
 					if (file instanceof TFile) {
-						const leaf = this.app.workspace.getLeaf(false);
+						const leaf = this.plugin.isTrackerViewOpenInMain()
+							? this.app.workspace.getLeaf("tab")
+							: this.app.workspace.getLeaf(false);
 						await leaf.openFile(file);
 					}
 				})
@@ -136,7 +138,9 @@ export class ManageApplicationModal extends Modal {
 					btn.setButtonText("Open Attachment").onClick(async () => {
 						const file = this.plugin.appService.resolveFile(this.application!.jobDescriptionFile!);
 						if (file instanceof TFile) {
-							const leaf = this.app.workspace.getLeaf(false);
+							const leaf = this.plugin.isTrackerViewOpenInMain()
+								? this.app.workspace.getLeaf("tab")
+								: this.app.workspace.getLeaf(false);
 							await leaf.openFile(file);
 						} else {
 							new Notice("Attachment file could not be found.");
@@ -306,7 +310,9 @@ export class ManageApplicationModal extends Modal {
 					this.close();
 					const prepFile = this.plugin.appService.resolveFile(iv.prepNotePath!);
 					if (prepFile instanceof TFile) {
-						const leaf = this.app.workspace.getLeaf(false);
+						const leaf = this.plugin.isTrackerViewOpenInMain()
+							? this.app.workspace.getLeaf("tab")
+							: this.app.workspace.getLeaf(false);
 						await leaf.openFile(prepFile);
 					}
 				};

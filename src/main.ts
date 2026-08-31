@@ -212,6 +212,14 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 		return null;
 	}
 
+	/**
+	 * Checks whether the Job Tracker main view is currently open in the main center workspace section.
+	 */
+	isTrackerViewOpenInMain(): boolean {
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_JOB_TRACKER);
+		return leaves.some((leaf) => leaf.getRoot() === this.app.workspace.rootSplit);
+	}
+
 	onunload() {}
 
 	async loadSettings() {
