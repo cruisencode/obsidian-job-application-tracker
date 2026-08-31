@@ -1,7 +1,7 @@
 {
 	"id": "job-application-tracker",
 	"name": "Job Application Tracker",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"minAppVersion": "1.7.2",
 	"description": "Track job applications, contacts, and interviews with Kanban, Table, List, and Sankey analytics dashboards.",
 	"author": "cruisencode",
