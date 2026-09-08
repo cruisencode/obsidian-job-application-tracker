@@ -97,6 +97,21 @@ export class ApplicationService {
 	}
 
 	/**
+	 * Inserts an entry into the Notes & Activity Log section, or appends the section at the end of the note if missing.
+	 */
+	appendActivityLogEntry(content: string, entry: string): string {
+		const logHeaderRegex = /(?:^|\n)(#{1,6}\s+(?:📝\s*)?Notes\s*(?:&|and)?\s*Activity Log)/i;
+		const match = content.match(logHeaderRegex);
+		if (match && match[1]) {
+			return content.replace(logHeaderRegex, (fullMatch, header) => {
+				const prefix = fullMatch.startsWith("\n") ? "\n" : "";
+				return `${prefix}${header}\n- ${entry}`;
+			});
+		}
+		return `${content.trimEnd()}\n\n## 📝 Notes & Activity Log\n- ${entry}\n`;
+	}
+
+	/**
 	 * Saves an attachment file (PDF, MD, etc.) into the attachments folder and returns the created TFile.
 	 */
 	async saveAttachment(file: File, prefix?: string): Promise<TFile> {
@@ -410,12 +425,7 @@ export class ApplicationService {
 			// If a note was provided, append it to the Notes & Activity Log section in the markdown
 			if (note) {
 				await this.app.vault.process(file, (content) => {
-					const logHeader = "## 📝 Notes & Activity Log";
-					if (content.includes(logHeader)) {
-						const insertion = `\n- **${today}** (${newStatus}): ${note}`;
-						return content.replace(logHeader, () => `${logHeader}${insertion}`);
-					}
-					return content;
+					return this.appendActivityLogEntry(content, `**${today}** (${newStatus}): ${note}`);
 				});
 			}
 
@@ -458,8 +468,7 @@ export class ApplicationService {
 			if (fields.jobDescriptionFile !== undefined || newJobDescriptionText !== undefined) {
 				await this.app.vault.process(file, (content) => {
 					const jdHeader = "## 📄 Job Description";
-					if (content.includes(jdHeader)) {
-						let newJdContent = `${jdHeader}\n`;
+					let newJdContent = `${jdHeader}\n`;
 						if (fields.jobDescriptionFile) {
 							const isPdf = fields.jobDescriptionFile.toLowerCase().endsWith(".pdf");
 							const title = isPdf ? "Job Description (PDF)" : "Job Description (Markdown)";
@@ -471,15 +480,16 @@ export class ApplicationService {
 							newJdContent += `*Paste job description or requirements here...*\n`;
 						}
 
-						// Replace the JD section content while preserving any sections that follow
-						const jdSectionRegex = new RegExp(
-							`(${jdHeader.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')})[\\\\s\\\\S]*?(?=\\\\n## |$)`
-						);
-						if (jdSectionRegex.test(content)) {
-							return content.replace(jdSectionRegex, () => newJdContent.trimEnd());
-						}
+					// Replace the JD section content while preserving any sections that follow
+					const jdSectionRegex = /(?:^|\n)(#{1,6}\s+(?:📄\s*)?Job Description)[\s\S]*?(?=\n#{1,6}\s+|$)/i;
+					if (jdSectionRegex.test(content)) {
+						return content.replace(jdSectionRegex, (fullMatch, header) => {
+							const prefix = fullMatch.startsWith("\n") ? "\n" : "";
+							return `${prefix}${header}\n${newJdContent.substring(jdHeader.length + 1).trimEnd()}`;
+						});
 					}
-					return content;
+					// Fallback: append Job Description section to end of file
+					return `${content.trimEnd()}\n\n${newJdContent.trimEnd()}\n`;
 				});
 			}
 
@@ -533,21 +543,25 @@ export class ApplicationService {
 
 			// Update ## 👥 Key Contacts section in body
 			await this.app.vault.process(file, (content) => {
-				const contactHeader = "## 👥 Key Contacts";
-				if (content.includes(contactHeader)) {
-					let contactLine = `- **${contact.name}** (${contact.role})`;
-					if (contact.email) contactLine += ` - [${contact.email}](mailto:${contact.email})`;
-					if (contact.phone) contactLine += ` - ${contact.phone}`;
-					if (contact.linkedin) contactLine += ` - [LinkedIn](${contact.linkedin})`;
-					if (contact.notes) contactLine += `\n  - *Notes:* ${contact.notes}`;
+				let contactLine = `- **${contact.name}** (${contact.role})`;
+				if (contact.email) contactLine += ` - [${contact.email}](mailto:${contact.email})`;
+				if (contact.phone) contactLine += ` - ${contact.phone}`;
+				if (contact.linkedin) contactLine += ` - [LinkedIn](${contact.linkedin})`;
+				if (contact.notes) contactLine += `\n  - *Notes:* ${contact.notes}`;
 
+				const contactHeaderRegex = /(?:^|\n)(#{1,6}\s+(?:👥\s*)?Key Contacts)/i;
+				if (contactHeaderRegex.test(content)) {
 					if (content.includes("*No contacts added yet.*")) {
 						return content.replace("*No contacts added yet.*", () => contactLine);
 					} else {
-						return content.replace(contactHeader, () => `${contactHeader}\n${contactLine}`);
+						return content.replace(contactHeaderRegex, (fullMatch, header) => {
+							const prefix = fullMatch.startsWith("\n") ? "\n" : "";
+							return `${prefix}${header}\n${contactLine}`;
+						});
 					}
 				}
-				return content;
+				// Fallback: append Key Contacts section to end of file
+				return `${content.trimEnd()}\n\n## 👥 Key Contacts\n${contactLine}\n`;
 			});
 
 			new Notice(`Added contact ${contact.name} to ${file.basename}`);
@@ -640,20 +654,24 @@ export class ApplicationService {
 
 			// Update ## 📅 Interviews & Stages section in body
 			await this.app.vault.process(file, (content) => {
-				const interviewHeader = "## 📅 Interviews & Stages";
-				if (content.includes(interviewHeader)) {
-					const prepLink = interview.prepNotePath
-						? ` - [[${interview.prepNotePath}|Prep Note]]`
-						: "";
-					const interviewLine = `- **${interview.roundName}** (${interview.status}) - ${interview.date || "TBD"} ${interview.time || ""}${prepLink}`;
+				const prepLink = interview.prepNotePath
+					? ` - [[${interview.prepNotePath}|Prep Note]]`
+					: "";
+				const interviewLine = `- **${interview.roundName}** (${interview.status}) - ${interview.date || "TBD"} ${interview.time || ""}${prepLink}`;
 
+				const interviewHeaderRegex = /(?:^|\n)(#{1,6}\s+(?:📅\s*)?Interviews\s*(?:&|and)?\s*Stages)/i;
+				if (interviewHeaderRegex.test(content)) {
 					if (content.includes("*No interviews scheduled yet.*")) {
 						return content.replace("*No interviews scheduled yet.*", () => interviewLine);
 					} else {
-						return content.replace(interviewHeader, () => `${interviewHeader}\n${interviewLine}`);
+						return content.replace(interviewHeaderRegex, (fullMatch, header) => {
+							const prefix = fullMatch.startsWith("\n") ? "\n" : "";
+							return `${prefix}${header}\n${interviewLine}`;
+						});
 					}
 				}
-				return content;
+				// Fallback: append Interviews & Stages section to end of file
+				return `${content.trimEnd()}\n\n## 📅 Interviews & Stages\n${interviewLine}\n`;
 			});
 
 			new Notice(`Added ${interview.roundName} to ${file.basename}`);
@@ -705,12 +723,7 @@ export class ApplicationService {
 
 			if (outcomeNotes) {
 				await this.app.vault.process(file, (content) => {
-					const logHeader = "## 📝 Notes & Activity Log";
-					if (content.includes(logHeader)) {
-						const insertion = `\n- **${today}** (Interview ${status}): ${outcomeNotes}`;
-						return content.replace(logHeader, () => `${logHeader}${insertion}`);
-					}
-					return content;
+					return this.appendActivityLogEntry(content, `**${today}** (Interview ${status}): ${outcomeNotes}`);
 				});
 			}
 
@@ -773,9 +786,15 @@ export class ApplicationService {
 				newContactsSection += `*No contacts added yet.*\n`;
 			}
 
-			if (updated.includes(contactHeader)) {
-				const regex = new RegExp(`${contactHeader}[\\s\\S]*?(?=\\n## |$)`);
-				updated = updated.replace(regex, () => newContactsSection.trimEnd());
+			const contactSectionRegex = /(?:^|\n)(#{1,6}\s+(?:👥\s*)?Key Contacts)[\s\S]*?(?=\n#{1,6}\s+|$)/i;
+			if (contactSectionRegex.test(updated)) {
+				updated = updated.replace(contactSectionRegex, (fullMatch, header) => {
+					const prefix = fullMatch.startsWith("\n") ? "\n" : "";
+					return `${prefix}${header}\n${newContactsSection.substring(contactHeader.length + 1).trimEnd()}`;
+				});
+			} else if (contacts.length > 0) {
+				// Fallback: append Key Contacts section if not found
+				updated = `${updated.trimEnd()}\n\n${newContactsSection.trimEnd()}\n`;
 			}
 
 			// Interviews section
@@ -790,9 +809,15 @@ export class ApplicationService {
 				newInterviewsSection += `*No interviews scheduled yet.*\n`;
 			}
 
-			if (updated.includes(interviewHeader)) {
-				const regex = new RegExp(`${interviewHeader}[\\s\\S]*?(?=\\n## |$)`);
-				updated = updated.replace(regex, () => newInterviewsSection.trimEnd());
+			const interviewSectionRegex = /(?:^|\n)(#{1,6}\s+(?:📅\s*)?Interviews\s*(?:&|and)?\s*Stages)[\s\S]*?(?=\n#{1,6}\s+|$)/i;
+			if (interviewSectionRegex.test(updated)) {
+				updated = updated.replace(interviewSectionRegex, (fullMatch, header) => {
+					const prefix = fullMatch.startsWith("\n") ? "\n" : "";
+					return `${prefix}${header}\n${newInterviewsSection.substring(interviewHeader.length + 1).trimEnd()}`;
+				});
+			} else if (interviews.length > 0) {
+				// Fallback: append Interviews & Stages section if not found
+				updated = `${updated.trimEnd()}\n\n${newInterviewsSection.trimEnd()}\n`;
 			}
 
 			return updated;
