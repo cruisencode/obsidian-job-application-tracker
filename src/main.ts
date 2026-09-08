@@ -1,4 +1,4 @@
-import { Plugin, TFile, WorkspaceLeaf } from "obsidian";
+import { Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
 import { JobApplicationTrackerSettings, JobApplication } from "./types";
 import { DEFAULT_SETTINGS, VIEW_TYPE_JOB_TRACKER } from "./constants";
 import { ApplicationService } from "./services/ApplicationService";
@@ -74,8 +74,9 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			id: "edit-job-application",
 			name: "Edit application details & attachments",
 			callback: () => {
-				const activeApp = this.getActiveApplication();
-				new EditApplicationModal(this.app, this, activeApp).open();
+				this.withActiveOrSelectedApplication((app) => {
+					new EditApplicationModal(this.app, this, app).open();
+				});
 			},
 		});
 
@@ -84,8 +85,9 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			id: "update-job-application-status",
 			name: "Update application status",
 			callback: () => {
-				const activeApp = this.getActiveApplication();
-				new UpdateStatusModal(this.app, this, activeApp).open();
+				this.withActiveOrSelectedApplication((app) => {
+					new UpdateStatusModal(this.app, this, app).open();
+				});
 			},
 		});
 
@@ -94,8 +96,9 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			id: "add-contact-to-application",
 			name: "Add contact to application",
 			callback: () => {
-				const activeApp = this.getActiveApplication();
-				new AddContactModal(this.app, this, activeApp).open();
+				this.withActiveOrSelectedApplication((app) => {
+					new AddContactModal(this.app, this, app).open();
+				});
 			},
 		});
 
@@ -104,8 +107,9 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			id: "add-interview-to-application",
 			name: "Add interview to application",
 			callback: () => {
-				const activeApp = this.getActiveApplication();
-				new AddInterviewModal(this.app, this, activeApp).open();
+				this.withActiveOrSelectedApplication((app) => {
+					new AddInterviewModal(this.app, this, app).open();
+				});
 			},
 		});
 
@@ -114,8 +118,9 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			id: "log-interview-outcome",
 			name: "Log interview outcome / debrief",
 			callback: () => {
-				const activeApp = this.getActiveApplication();
-				new LogInterviewOutcomeModal(this.app, this, activeApp).open();
+				this.withActiveOrSelectedApplication((app) => {
+					new LogInterviewOutcomeModal(this.app, this, app).open();
+				});
 			},
 		});
 
@@ -124,8 +129,9 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			id: "manage-job-application",
 			name: "Manage application (Contacts, Interviews & Details)",
 			callback: () => {
-				const activeApp = this.getActiveApplication();
-				new ManageApplicationModal(this.app, this, activeApp).open();
+				this.withActiveOrSelectedApplication((app) => {
+					new ManageApplicationModal(this.app, this, app).open();
+				});
 			},
 		});
 
@@ -134,37 +140,20 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			id: "delete-job-application",
 			name: "Delete application note",
 			callback: () => {
-				const activeApp = this.getActiveApplication();
-				if (!activeApp) {
-					new SelectApplicationModal(this.app, this, (selectedApp) => {
-						new ConfirmDeleteModal(
-							this.app,
-							`Delete ${selectedApp.company}?`,
-							`Are you sure you want to delete the application note for "${selectedApp.company} - ${selectedApp.role}"? This will move the file to trash.`,
-							"Delete Application",
-							async () => {
-								const file = this.appService.resolveFile(selectedApp.filePath);
-								if (file instanceof TFile) {
-									await this.appService.deleteApplication(file);
-								}
+				this.withActiveOrSelectedApplication((app) => {
+					new ConfirmDeleteModal(
+						this.app,
+						`Delete ${app.company}?`,
+						`Are you sure you want to delete the application note for "${app.company} - ${app.role}"? This will move the file to trash.`,
+						"Delete Application",
+						async () => {
+							const file = this.appService.resolveFile(app.filePath);
+							if (file instanceof TFile) {
+								await this.appService.deleteApplication(file);
 							}
-						).open();
-					}).open();
-					return;
-				}
-
-				new ConfirmDeleteModal(
-					this.app,
-					`Delete ${activeApp.company}?`,
-					`Are you sure you want to delete the application note for "${activeApp.company} - ${activeApp.role}"? This will move the file to trash.`,
-					"Delete Application",
-					async () => {
-						const file = this.appService.resolveFile(activeApp.filePath);
-						if (file instanceof TFile) {
-							await this.appService.deleteApplication(file);
 						}
-					}
-				).open();
+					).open();
+				});
 			},
 		});
 
@@ -210,6 +199,34 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			return this.appService.getApplicationFromCache(activeFile);
 		}
 		return null;
+	}
+
+	/**
+	 * Helper that ensures a JobApplication is provided before executing an action.
+	 * If the active file is a tracked application, it is used immediately.
+	 * Otherwise, prompts the user with SelectApplicationModal to choose one.
+	 */
+	withActiveOrSelectedApplication(action: (app: JobApplication) => void): void {
+		const activeApp = this.getActiveApplication();
+		if (activeApp) {
+			action(activeApp);
+			return;
+		}
+
+		const applications = this.appService.getAllApplications();
+		if (applications.length === 0) {
+			new Notice("No job applications found. Create one first!");
+			return;
+		}
+
+		new SelectApplicationModal(
+			this.app,
+			this,
+			(selectedApp) => {
+				action(selectedApp);
+			},
+			applications
+		).open();
 	}
 
 	/**
