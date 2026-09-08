@@ -118,12 +118,24 @@ export class JobTrackerView extends ItemView {
 		);
 		this.registerEvent(
 			this.app.vault.on("delete", (file) => {
-				if (file instanceof TFile && file.extension === "md" && this.isTrackedFile(file)) this.debouncedRefresh();
+				if (
+					(file instanceof TFile && file.extension === "md" && this.isTrackedFile(file)) ||
+					this.applications.some((a) => a.filePath === file.path || a.filePath.startsWith(file.path + "/"))
+				) {
+					this.debouncedRefresh();
+				}
 			})
 		);
 		this.registerEvent(
-			this.app.vault.on("rename", (file) => {
-				if (file instanceof TFile && file.extension === "md" && this.isTrackedFile(file)) this.debouncedRefresh();
+			this.app.vault.on("rename", (file, oldPath) => {
+				const appFolder = normalizePath(this.plugin.settings.trackerFolderPath);
+				if (
+					(file instanceof TFile && file.extension === "md" && this.isTrackedFile(file)) ||
+					oldPath.startsWith(appFolder + "/") ||
+					this.applications.some((a) => a.filePath === oldPath || a.filePath.startsWith(oldPath + "/"))
+				) {
+					this.debouncedRefresh();
+				}
 			})
 		);
 		this.registerEvent(
