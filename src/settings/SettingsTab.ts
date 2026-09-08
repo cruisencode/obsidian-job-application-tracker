@@ -216,7 +216,7 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 						if ("desc" in item && item.desc) {
 							setting.setDesc(item.desc);
 						}
-						item.render(setting, def as any);
+						(item.render as (s: Setting) => void)(setting);
 					}
 				}
 			}
