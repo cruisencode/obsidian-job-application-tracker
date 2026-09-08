@@ -21,6 +21,7 @@ export class SelectApplicationModal extends FuzzySuggestModal<JobApplication> {
 		this.onSelect = onSelect;
 		this.applications = applications || this.plugin.appService.getAllApplications();
 		this.setPlaceholder("Type to search application by company or role...");
+		this.emptyStateText = "No applications found.";
 	}
 
 	getItems(): JobApplication[] {

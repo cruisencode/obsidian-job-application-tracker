@@ -24,6 +24,8 @@ export class EditApplicationModal extends Modal {
 	jobDescriptionFile = "";
 	uploadedFile: File | null = null;
 	newJobDescriptionText = "";
+	companyInputEl: HTMLInputElement | null = null;
+	roleInputEl: HTMLInputElement | null = null;
 
 	constructor(app: App, plugin: JobApplicationTrackerPlugin, application: JobApplication | null = null) {
 		super(app);
@@ -78,20 +80,24 @@ export class EditApplicationModal extends Modal {
 		// Company
 		new Setting(contentEl)
 			.setName("Company")
-			.addText((text) =>
+			.setDesc("Company name (required)")
+			.addText((text) => {
+				this.companyInputEl = text.inputEl;
 				text.setValue(this.company).onChange((value) => {
 					this.company = value;
-				})
-			);
+				});
+			});
 
 		// Role
 		new Setting(contentEl)
 			.setName("Role / Position")
-			.addText((text) =>
+			.setDesc("Job title (required)")
+			.addText((text) => {
+				this.roleInputEl = text.inputEl;
 				text.setValue(this.role).onChange((value) => {
 					this.role = value;
-				})
-			);
+				});
+			});
 
 		// Status
 		new Setting(contentEl)
@@ -261,6 +267,17 @@ export class EditApplicationModal extends Modal {
 
 	async handleSubmit() {
 		if (!this.application) return;
+
+		if (!this.company.trim()) {
+			new Notice("Please enter a company name.");
+			this.companyInputEl?.focus();
+			return;
+		}
+		if (!this.role.trim()) {
+			new Notice("Please enter a role / job title.");
+			this.roleInputEl?.focus();
+			return;
+		}
 
 		try {
 			let finalAttachmentPath = this.jobDescriptionFile;
