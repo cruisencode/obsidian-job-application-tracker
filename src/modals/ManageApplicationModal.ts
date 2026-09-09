@@ -66,34 +66,33 @@ export class ManageApplicationModal extends Modal {
 		});
 
 		// Tab navigation buttons
-		const tabRow = contentEl.createDiv({ cls: "job-tracker-view-switcher job-tracker-modal-switcher" });
-
-		const overviewTabBtn = tabRow.createEl("button", {
-			cls: `job-tracker-mode-btn ${this.activeTab === "overview" ? "is-active" : ""}`,
-			text: "Overview & Note",
+		const tabRow = contentEl.createDiv({
+			cls: "job-tracker-view-switcher job-tracker-modal-switcher",
+			attr: { role: "tablist", "aria-label": "Application details tabs" },
 		});
-		overviewTabBtn.onclick = () => {
-			this.activeTab = "overview";
-			this.renderModal();
-		};
 
-		const contactsTabBtn = tabRow.createEl("button", {
-			cls: `job-tracker-mode-btn ${this.activeTab === "contacts" ? "is-active" : ""}`,
-			text: `Contacts (${this.application.contacts.length})`,
-		});
-		contactsTabBtn.onclick = () => {
-			this.activeTab = "contacts";
-			this.renderModal();
-		};
+		const tabs: { id: "overview" | "contacts" | "interviews"; label: string }[] = [
+			{ id: "overview", label: "Overview & Note" },
+			{ id: "contacts", label: `Contacts (${this.application.contacts.length})` },
+			{ id: "interviews", label: `Interviews (${this.application.interviews.length})` },
+		];
 
-		const interviewsTabBtn = tabRow.createEl("button", {
-			cls: `job-tracker-mode-btn ${this.activeTab === "interviews" ? "is-active" : ""}`,
-			text: `Interviews (${this.application.interviews.length})`,
-		});
-		interviewsTabBtn.onclick = () => {
-			this.activeTab = "interviews";
-			this.renderModal();
-		};
+		for (const tab of tabs) {
+			const isActive = this.activeTab === tab.id;
+			const tabBtn = tabRow.createEl("button", {
+				cls: `job-tracker-mode-btn ${isActive ? "is-active" : ""}`,
+				text: tab.label,
+				attr: {
+					role: "tab",
+					"aria-selected": `${isActive}`,
+					tabindex: isActive ? "0" : "-1",
+				},
+			});
+			tabBtn.onclick = () => {
+				this.activeTab = tab.id;
+				this.renderModal();
+			};
+		}
 
 		const tabContainer = contentEl.createDiv({ cls: "job-tracker-modal-tab-content" });
 

@@ -424,12 +424,12 @@
 	border-radius: 6px;
 	padding: 10px;
 	cursor: grab;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+	box-shadow: var(--shadow-s);
 	transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .job-tracker-kanban-card:hover {
-	box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+	box-shadow: var(--shadow-l);
 	border-color: var(--interactive-accent);
 }
 
@@ -503,14 +503,14 @@
 }
 
 .job-tracker-badge.job-tracker-badge-attachment {
-	background-color: rgba(66, 153, 225, 0.12);
+	background-color: color-mix(in srgb, var(--text-accent) 12%, transparent);
 	color: var(--text-accent);
 	cursor: pointer;
-	border: 1px solid rgba(66, 153, 225, 0.25);
+	border: 1px solid color-mix(in srgb, var(--text-accent) 25%, transparent);
 }
 
 .job-tracker-badge.job-tracker-badge-attachment:hover {
-	background-color: rgba(66, 153, 225, 0.22);
+	background-color: color-mix(in srgb, var(--text-accent) 22%, transparent);
 	text-decoration: underline;
 }
 
@@ -520,9 +520,9 @@
 }
 
 .job-tracker-badge.job-tracker-badge-followup {
-	background-color: rgba(237, 137, 54, 0.12);
+	background-color: color-mix(in srgb, var(--text-warning, #dd6b20) 12%, transparent);
 	color: var(--text-warning, #dd6b20);
-	border: 1px solid rgba(237, 137, 54, 0.25);
+	border: 1px solid color-mix(in srgb, var(--text-warning, #dd6b20) 25%, transparent);
 }
 
 .job-tracker-clickable {
@@ -918,6 +918,7 @@
 .job-tracker-progress-fill.status-screening { background-color: var(--job-status-screening); }
 .job-tracker-progress-fill.status-interviewing { background-color: var(--job-status-interviewing); }
 .job-tracker-progress-fill.status-offer { background-color: var(--job-status-offer); }
+.job-tracker-progress-fill.status-accepted { background-color: var(--job-status-accepted); }
 .job-tracker-progress-fill.status-rejected { background-color: var(--job-status-rejected); }
 .job-tracker-progress-fill.status-withdrawn { background-color: var(--job-status-withdrawn); }
 .job-tracker-progress-fill.status-ghosted { background-color: var(--job-status-ghosted); }

@@ -232,6 +232,8 @@ export class SankeyDiagram {
 			attr: {
 				viewBox: `0 0 ${baseWidth} ${baseHeight}`,
 				preserveAspectRatio: "xMidYMid meet",
+				role: "img",
+				"aria-label": "Sankey diagram showing job application pipeline flow",
 			},
 		});
 
