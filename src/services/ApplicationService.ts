@@ -469,16 +469,16 @@ export class ApplicationService {
 				await this.app.vault.process(file, (content) => {
 					const jdHeader = "## 📄 Job Description";
 					let newJdContent = `${jdHeader}\n`;
-						if (fields.jobDescriptionFile) {
-							const isPdf = fields.jobDescriptionFile.toLowerCase().endsWith(".pdf");
-							const title = isPdf ? "Job Description (PDF)" : "Job Description (Markdown)";
-							newJdContent += `> [!abstract]- 📎 ${title}\n> ![[${fields.jobDescriptionFile}]]\n\n`;
-						}
-						if (newJobDescriptionText) {
-							newJdContent += `${newJobDescriptionText}\n`;
-						} else if (!fields.jobDescriptionFile) {
-							newJdContent += `*Paste job description or requirements here...*\n`;
-						}
+					if (fields.jobDescriptionFile) {
+						const isPdf = fields.jobDescriptionFile.toLowerCase().endsWith(".pdf");
+						const title = isPdf ? "Job Description (PDF)" : "Job Description (Markdown)";
+						newJdContent += `> [!abstract]- 📎 ${title}\n> ![[${fields.jobDescriptionFile}]]\n\n`;
+					}
+					if (newJobDescriptionText) {
+						newJdContent += `${newJobDescriptionText}\n`;
+					} else if (!fields.jobDescriptionFile) {
+						newJdContent += `*Paste job description or requirements here...*\n`;
+					}
 
 					// Replace the JD section content while preserving any sections that follow
 					const jdSectionRegex = /(?:^|\n)(#{1,6}\s+(?:📄\s*)?Job Description)[\s\S]*?(?=\n#{1,6}\s+|$)/i;

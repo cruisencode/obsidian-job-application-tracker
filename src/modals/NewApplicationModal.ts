@@ -205,6 +205,8 @@ export class NewApplicationModal extends Modal {
 		fileInput.onchange = () => {
 			if (fileInput.files && fileInput.files.length > 0) {
 				selectedAttachmentFile = fileInput.files[0];
+			} else {
+				selectedAttachmentFile = null;
 			}
 		};
 

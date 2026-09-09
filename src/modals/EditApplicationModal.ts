@@ -225,6 +225,8 @@ export class EditApplicationModal extends Modal {
 		fileInput.onchange = () => {
 			if (fileInput.files && fileInput.files.length > 0) {
 				this.uploadedFile = fileInput.files[0];
+			} else {
+				this.uploadedFile = null;
 			}
 		};
 

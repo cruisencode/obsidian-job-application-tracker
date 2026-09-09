@@ -238,13 +238,6 @@ export class JobTrackerView extends ItemView {
 				this.currentMode = mode;
 				this.render();
 			};
-			btn.onkeydown = (e) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					this.currentMode = mode;
-					this.render();
-				}
-			};
 		}
 
 		// Refresh button
@@ -325,8 +318,12 @@ export class JobTrackerView extends ItemView {
 		if (contentArea instanceof HTMLElement) {
 			contentArea.empty();
 			const filteredApps = this.getFilteredAndSortedApps();
-			if (filteredApps.length === 0 && this.applications.length === 0) {
-				this.renderEmptyState(contentArea);
+			if (filteredApps.length === 0) {
+				if (this.applications.length === 0) {
+					this.renderEmptyState(contentArea);
+				} else {
+					this.renderNoSearchResults(contentArea);
+				}
 				return;
 			}
 			if (this.currentMode === "kanban") {
@@ -397,6 +394,25 @@ export class JobTrackerView extends ItemView {
 		});
 		addBtn.onclick = () => {
 			new NewApplicationModal(this.app, this.plugin).open();
+		};
+	}
+
+	renderNoSearchResults(container: HTMLElement) {
+		const emptyDiv = container.createDiv({ cls: "job-tracker-empty-state" });
+		const iconEl = emptyDiv.createDiv({ cls: "job-tracker-empty-icon" });
+		setIcon(iconEl, "search");
+		emptyDiv.createEl("h4", { text: "No Matching Applications" });
+		emptyDiv.createEl("p", {
+			text: "No job applications match your current search query or filter.",
+		});
+		const clearBtn = emptyDiv.createEl("button", {
+			cls: "mod-cta",
+			text: "Clear Filters",
+		});
+		clearBtn.onclick = () => {
+			this.searchQuery = "";
+			this.statusFilter = "All";
+			this.render();
 		};
 	}
 
@@ -688,14 +704,8 @@ export class JobTrackerView extends ItemView {
 	async openNote(filePath: string) {
 		const file = this.plugin.appService.resolveFile(filePath);
 		if (file instanceof TFile) {
-			const activeLeaf = this.app.workspace.getActiveViewOfType(JobTrackerView);
-			if (activeLeaf && activeLeaf.leaf === this.leaf) {
-				const targetLeaf = this.app.workspace.getLeaf("tab");
-				await targetLeaf.openFile(file);
-			} else {
-				const leaf = this.app.workspace.getLeaf(false);
-				await leaf.openFile(file);
-			}
+			const targetLeaf = this.app.workspace.getLeaf("tab");
+			await targetLeaf.openFile(file);
 		}
 	}
 }

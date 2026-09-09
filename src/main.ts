@@ -241,16 +241,20 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 
 	async loadSettings() {
 		const data = (await this.loadData()) as Partial<JobApplicationTrackerSettings> | null;
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, data || {});
-		if (!Array.isArray(this.settings.statuses) || this.settings.statuses.length === 0) {
-			this.settings.statuses = [...DEFAULT_SETTINGS.statuses];
-		}
-		if (!Array.isArray(this.settings.defaultSourceOptions) || this.settings.defaultSourceOptions.length === 0) {
-			this.settings.defaultSourceOptions = [...DEFAULT_SETTINGS.defaultSourceOptions];
-		}
-		if (!this.settings.interviewPrepTemplate) {
-			this.settings.interviewPrepTemplate = DEFAULT_SETTINGS.interviewPrepTemplate;
-		}
+		this.settings = {
+			trackerFolderPath: data?.trackerFolderPath || DEFAULT_SETTINGS.trackerFolderPath,
+			interviewNotesFolderPath: data?.interviewNotesFolderPath || DEFAULT_SETTINGS.interviewNotesFolderPath,
+			attachmentsFolderPath: data?.attachmentsFolderPath || DEFAULT_SETTINGS.attachmentsFolderPath,
+			statuses: Array.isArray(data?.statuses) && data.statuses.length > 0
+				? [...data.statuses]
+				: [...DEFAULT_SETTINGS.statuses],
+			defaultStatus: data?.defaultStatus || DEFAULT_SETTINGS.defaultStatus,
+			interviewPrepTemplate: data?.interviewPrepTemplate || DEFAULT_SETTINGS.interviewPrepTemplate,
+			defaultSourceOptions: Array.isArray(data?.defaultSourceOptions) && data.defaultSourceOptions.length > 0
+				? [...data.defaultSourceOptions]
+				: [...DEFAULT_SETTINGS.defaultSourceOptions],
+			openViewLocation: data?.openViewLocation || DEFAULT_SETTINGS.openViewLocation,
+		};
 	}
 
 	async saveSettings() {
