@@ -71,7 +71,7 @@ export class UpdateStatusModal extends BaseApplicationModal {
 				}
 				dropdown.setValue(this.newStatus);
 				dropdown.onChange((value) => {
-					this.newStatus = value as JobStatus;
+					this.newStatus = value;
 				});
 			});
 

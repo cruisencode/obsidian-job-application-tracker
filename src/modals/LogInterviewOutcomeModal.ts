@@ -108,7 +108,7 @@ export class LogInterviewOutcomeModal extends BaseApplicationModal {
 				}
 				dropdown.setValue(this.nextStage);
 				dropdown.onChange((value) => {
-					this.nextStage = value as JobStatus | "";
+					this.nextStage = value;
 				});
 			});
 

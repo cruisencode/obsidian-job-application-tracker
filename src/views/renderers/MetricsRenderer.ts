@@ -81,7 +81,7 @@ export class MetricsRenderer {
 			const progressFill = progressBg.createDiv({
 				cls: `job-tracker-progress-fill ${getStatusClassName(st)}`,
 			});
-			progressFill.style.width = `${pct}%`;
+			progressFill.setCssStyles({ width: `${pct}%` });
 		}
 
 		// 4. Section: Source Performance Analytics

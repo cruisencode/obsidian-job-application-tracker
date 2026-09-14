@@ -16,7 +16,7 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 	}
 
 	private sanitizeFolderPath(input: string, fallback: string): string {
-		const cleaned = input.trim().replace(/[\\:*?"<>|#^\[\]]/g, "-");
+		const cleaned = input.trim().replace(/[\\:*?"<>|#^[\]]/g, "-");
 		const normalized = normalizePath(cleaned);
 		return normalized === "." || !normalized ? fallback : normalized;
 	}
@@ -135,7 +135,7 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 								}
 								dropdown.setValue(this.plugin.settings.defaultStatus);
 								dropdown.onChange(async (value) => {
-									this.plugin.settings.defaultStatus = value as JobStatus;
+									this.plugin.settings.defaultStatus = value;
 									await this.plugin.saveSettings();
 								});
 							});

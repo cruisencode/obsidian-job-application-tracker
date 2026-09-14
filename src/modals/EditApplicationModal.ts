@@ -110,7 +110,7 @@ export class EditApplicationModal extends BaseApplicationModal {
 				}
 				dropdown.setValue(this.status);
 				dropdown.onChange((value) => {
-					this.status = value as JobStatus;
+					this.status = value;
 				});
 			});
 
@@ -229,17 +229,17 @@ export class EditApplicationModal extends BaseApplicationModal {
 				.setName("Attach Job Description File")
 				.setDesc("Upload a PDF or Markdown job spec")
 				.then((setting) => {
-					const input = document.createElement("input");
-					input.type = "file";
-					input.accept = ".pdf,.md,.txt";
-					input.className = "job-tracker-file-input";
+					const input = setting.controlEl.createEl("input", {
+						type: "file",
+						cls: "job-tracker-file-input",
+						attr: { accept: ".pdf,.md,.txt" },
+					});
 					input.onchange = () => {
 						if (input.files && input.files[0]) {
 							this.uploadedFile = input.files[0];
 							new Notice(`Attached file: ${this.uploadedFile.name}`);
 						}
 					};
-					setting.controlEl.appendChild(input);
 				});
 		}
 

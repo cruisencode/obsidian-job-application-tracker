@@ -220,13 +220,13 @@ export class JobTrackerView extends ItemView {
 			btn.setAttribute("tabindex", isActive ? "0" : "-1");
 		}
 		if (this.filterRowEl) {
-			this.filterRowEl.style.display = this.currentMode === "metrics" ? "none" : "";
+			this.filterRowEl.toggleClass("job-tracker-is-hidden", this.currentMode === "metrics");
 		}
 		if (this.searchInputEl && this.searchInputEl.value !== this.searchQuery) {
 			this.searchInputEl.value = this.searchQuery;
 		}
 		if (this.searchClearEl) {
-			this.searchClearEl.style.display = this.searchQuery ? "" : "none";
+			this.searchClearEl.toggleClass("job-tracker-is-hidden", !this.searchQuery);
 		}
 	}
 
@@ -298,9 +298,7 @@ export class JobTrackerView extends ItemView {
 
 		// Filter & Search bar row (only for non-metrics view)
 		this.filterRowEl = container.createDiv({ cls: "job-tracker-filter-row" });
-		if (this.currentMode === "metrics") {
-			this.filterRowEl.style.display = "none";
-		}
+		this.filterRowEl.toggleClass("job-tracker-is-hidden", this.currentMode === "metrics");
 
 		// Search input
 		const searchWrapper = this.filterRowEl.createDiv({ cls: "job-tracker-search-wrapper" });
@@ -316,7 +314,7 @@ export class JobTrackerView extends ItemView {
 		this.searchInputEl.oninput = (e) => {
 			this.searchQuery = (e.target as HTMLInputElement).value;
 			if (this.searchClearEl) {
-				this.searchClearEl.style.display = this.searchQuery ? "" : "none";
+				this.searchClearEl.toggleClass("job-tracker-is-hidden", !this.searchQuery);
 			}
 			this.debouncedSearch();
 		};
@@ -326,7 +324,7 @@ export class JobTrackerView extends ItemView {
 			attr: { "aria-label": "Clear search", role: "button", tabindex: "0" },
 		});
 		setIcon(this.searchClearEl, "x");
-		this.searchClearEl.style.display = this.searchQuery ? "" : "none";
+		this.searchClearEl.toggleClass("job-tracker-is-hidden", !this.searchQuery);
 		this.searchClearEl.onclick = () => {
 			this.searchQuery = "";
 			if (this.searchInputEl) this.searchInputEl.value = "";
@@ -360,7 +358,7 @@ export class JobTrackerView extends ItemView {
 	}
 
 	renderContentOnly() {
-		const contentArea = this.contentAreaEl || (this.contentEl.querySelector(".job-tracker-content-area") as HTMLElement | null);
+		const contentArea = this.contentAreaEl ?? this.contentEl.querySelector<HTMLElement>(".job-tracker-content-area");
 		if (contentArea instanceof HTMLElement) {
 			contentArea.empty();
 			const filteredApps = this.getFilteredAndSortedApps();

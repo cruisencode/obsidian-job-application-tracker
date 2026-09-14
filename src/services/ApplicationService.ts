@@ -1,5 +1,5 @@
 import { App, Notice, TFile, TFolder, normalizePath, stringifyYaml } from "obsidian";
-import { Contact, EmploymentType, FINAL_STATUSES, InterviewRound, JobApplication, JobApplicationFrontMatter, JobStatus, StatusHistoryEntry, WorkplaceType, isFinalStatus } from "../types";
+import { Contact, EmploymentType, InterviewRound, InterviewRoundType, JobApplication, JobApplicationFrontMatter, JobStatus, StatusHistoryEntry, WorkplaceType, isFinalStatus } from "../types";
 import JobApplicationTrackerPlugin from "../main";
 
 /**
@@ -184,7 +184,7 @@ export class ApplicationService {
 	 */
 	sanitizeFileName(name: string): string {
 		return name
-			.replace(/[\\/:*?"<>|#^\[\]]/g, "-")
+			.replace(/[\\/:*?"<>|#^[\]]/g, "-")
 			.replace(/\s+/g, " ")
 			.trim();
 	}
@@ -484,7 +484,7 @@ export class ApplicationService {
 		const baseParts = file.basename.split(" - ");
 		const company = rawCompany || (baseParts[0]?.trim() || "Unknown Company");
 		const role = rawRole || (baseParts[1]?.trim() || "Unknown Role");
-		const status = (rawStatus || "Applied") as JobStatus;
+		const status = rawStatus || "Applied";
 
 		const contacts: Contact[] = [];
 		if (Array.isArray(rawFrontmatter.contacts)) {
@@ -514,7 +514,7 @@ export class ApplicationService {
 					interviews.push({
 						id: typeof ivObj.id === "string" ? ivObj.id : String(Date.now()),
 						roundName: String(ivObj.roundName),
-						roundType: (typeof ivObj.roundType === "string" ? ivObj.roundType : "Other") as any,
+						roundType: (typeof ivObj.roundType === "string" ? ivObj.roundType : "Other") as InterviewRoundType,
 						date: typeof ivObj.date === "string" ? ivObj.date : undefined,
 						time: typeof ivObj.time === "string" ? ivObj.time : undefined,
 						interviewers: typeof ivObj.interviewers === "string" ? ivObj.interviewers : undefined,
@@ -532,7 +532,7 @@ export class ApplicationService {
 				if (sh && typeof sh === "object" && typeof (sh as Record<string, unknown>).status === "string") {
 					const shObj = sh as Record<string, unknown>;
 					statusHistory.push({
-						status: String(shObj.status) as JobStatus,
+						status: String(shObj.status),
 						date: typeof shObj.date === "string" ? shObj.date : "",
 						note: typeof shObj.note === "string" ? shObj.note : undefined,
 					});

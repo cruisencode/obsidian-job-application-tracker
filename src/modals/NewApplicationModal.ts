@@ -77,7 +77,7 @@ export class NewApplicationModal extends Modal {
 				}
 				dropdown.setValue(this.status);
 				dropdown.onChange((value) => {
-					this.status = value as JobStatus;
+					this.status = value;
 				});
 			});
 
@@ -222,17 +222,17 @@ export class NewApplicationModal extends Modal {
 			.setName("Attach Job Description File")
 			.setDesc("Upload a PDF, Markdown, or text file")
 			.then((setting) => {
-				const input = document.createElement("input");
-				input.type = "file";
-				input.accept = ".pdf,.md,.txt";
-				input.className = "job-tracker-file-input";
+				const input = setting.controlEl.createEl("input", {
+					type: "file",
+					cls: "job-tracker-file-input",
+					attr: { accept: ".pdf,.md,.txt" },
+				});
 				input.onchange = () => {
 					if (input.files && input.files[0]) {
 						uploadedFile = input.files[0];
 						new Notice(`Attached file: ${uploadedFile.name}`);
 					}
 				};
-				setting.controlEl.appendChild(input);
 			});
 
 		// Or paste plain text JD
