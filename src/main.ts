@@ -278,9 +278,7 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 		return leaves.some((leaf) => leaf.getRoot() === this.app.workspace.rootSplit);
 	}
 
-	onunload() {
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_JOB_TRACKER);
-	}
+	onunload() {}
 
 	async loadSettings() {
 		const data = (await this.loadData()) as Partial<JobApplicationTrackerSettings> | null;

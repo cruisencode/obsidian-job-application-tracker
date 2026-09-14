@@ -1,9 +1,10 @@
-import { App, debounce, normalizePath, PluginSettingTab, Setting, SettingDefinitionItem, TextAreaComponent } from "obsidian";
+import { App, debounce, DropdownComponent, normalizePath, PluginSettingTab, Setting, SettingDefinitionItem, TextAreaComponent } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { DEFAULT_INTERVIEW_PREP_TEMPLATE, DEFAULT_SETTINGS, DEFAULT_STATUSES } from "../constants";
 
 export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 	plugin: JobApplicationTrackerPlugin;
+	private defaultStatusDropdown: DropdownComponent | null = null;
 
 	private debouncedSave = debounce(async () => {
 		await this.plugin.saveSettings();
@@ -12,6 +13,15 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 	constructor(app: App, plugin: JobApplicationTrackerPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
+	}
+
+	private updateDefaultStatusDropdown(): void {
+		if (!this.defaultStatusDropdown) return;
+		this.defaultStatusDropdown.selectEl.empty();
+		for (const st of this.plugin.settings.statuses) {
+			this.defaultStatusDropdown.addOption(st, st);
+		}
+		this.defaultStatusDropdown.setValue(this.plugin.settings.defaultStatus);
 	}
 
 	private sanitizeFolderPath(input: string, fallback: string): string {
@@ -144,6 +154,7 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 												if (!cleanStatuses.includes(this.plugin.settings.defaultStatus)) {
 													this.plugin.settings.defaultStatus = cleanStatuses[0];
 												}
+												this.updateDefaultStatusDropdown();
 												this.debouncedSave();
 											}
 										});
@@ -159,7 +170,7 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 											if (stagesTextArea) {
 												stagesTextArea.setValue(DEFAULT_STATUSES.join(", "));
 											}
-											this.display();
+											this.updateDefaultStatusDropdown();
 										});
 								});
 						},
@@ -169,6 +180,7 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 						desc: "Default status assigned to newly created applications.",
 						render: (setting: Setting) => {
 							setting.addDropdown((dropdown) => {
+								this.defaultStatusDropdown = dropdown;
 								for (const st of this.plugin.settings.statuses) {
 									dropdown.addOption(st, st);
 								}
