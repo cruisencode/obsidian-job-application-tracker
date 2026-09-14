@@ -2,7 +2,8 @@
 /* Obsidian Job Application Tracker Styles                                  */
 /* ========================================================================= */
 
-.job-tracker-view {
+.job-tracker-view,
+.job-tracker-modal {
 	--job-status-wishlist: var(--color-base-70, #718096);
 	--job-status-applied: var(--color-blue, #3182ce);
 	--job-status-screening: var(--color-purple, #805ad5);
@@ -32,7 +33,9 @@
 	--job-status-rejected-border: color-mix(in srgb, var(--job-status-rejected) 30%, transparent);
 	--job-status-withdrawn-border: color-mix(in srgb, var(--job-status-withdrawn) 30%, transparent);
 	--job-status-ghosted-border: color-mix(in srgb, var(--job-status-ghosted) 30%, transparent);
+}
 
+.job-tracker-view {
 	container-type: inline-size;
 	display: flex;
 	flex-direction: column;
@@ -656,6 +659,39 @@
 	background: var(--background-secondary);
 }
 
+/* Pagination Bar */
+.job-tracker-pagination-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 8px 4px 8px;
+	gap: 12px;
+	border-top: 1px solid var(--background-modifier-border);
+	margin-top: 8px;
+}
+
+.job-tracker-pagination-info {
+	font-size: 0.85em;
+	color: var(--text-muted);
+}
+
+.job-tracker-load-more-btn {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 12px;
+	font-size: 0.85em;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--interactive-normal);
+	color: var(--text-normal);
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+}
+
+.job-tracker-load-more-btn:hover {
+	background: var(--interactive-hover);
+}
+
 /* ========================================================================= */
 /* LIST VIEW                                                                 */
 /* ========================================================================= */
@@ -723,6 +759,22 @@
 	font-size: 0.78em;
 	color: var(--text-muted);
 	flex-wrap: wrap;
+}
+
+.job-tracker-detail-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.job-tracker-detail-icon {
+	display: inline-flex;
+	align-items: center;
+}
+
+.job-tracker-detail-icon svg {
+	width: 13px;
+	height: 13px;
 }
 
 .job-tracker-list-highlight {
@@ -858,25 +910,47 @@
 
 .job-tracker-sankey-ribbon {
 	cursor: pointer;
-	transition: fill-opacity 0.2s ease;
+	transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
 .job-tracker-sankey-ribbon:hover {
 	filter: brightness(1.2);
 }
 
-.job-tracker-sankey-node rect {
-	cursor: pointer;
-	transition: transform 0.15s ease, filter 0.15s ease;
+.job-tracker-sankey-container .job-tracker-sankey-ribbon.is-dimmed {
+	opacity: 0.12;
 }
 
-.job-tracker-sankey-node rect:hover {
-	filter: brightness(1.25);
+.job-tracker-sankey-container .job-tracker-sankey-ribbon.is-highlighted {
+	opacity: 0.95;
+	filter: brightness(1.18) drop-shadow(0 0 3px rgba(0, 0, 0, 0.25));
+}
+
+.job-tracker-sankey-node {
+	cursor: pointer;
+	transition: opacity 0.2s ease;
+}
+
+.job-tracker-sankey-container .job-tracker-sankey-node.is-dimmed {
+	opacity: 0.25;
+}
+
+.job-tracker-sankey-node rect {
+	cursor: pointer;
+	transition: transform 0.15s ease, filter 0.15s ease, stroke-width 0.15s ease;
+}
+
+.job-tracker-sankey-node rect:hover,
+.job-tracker-sankey-node.is-highlighted rect {
+	stroke: var(--interactive-accent, #7c3aed);
+	stroke-width: 2px;
+	filter: brightness(1.2);
 }
 
 .job-tracker-sankey-node text {
 	user-select: none;
 	pointer-events: none;
+	transition: opacity 0.2s ease;
 }
 
 /* Funnel Progress Bars */
@@ -1062,35 +1136,6 @@
 
 /* Responsive Styles for narrow sidebars, container queries, and mobile */
 @container (max-width: 600px) {
-	.job-tracker-header-top {
-		flex-direction: column;
-		align-items: flex-start;
-	}
-
-	.job-tracker-header-actions {
-		width: 100%;
-		justify-content: space-between;
-	}
-
-	.job-tracker-filter-row {
-		flex-direction: column;
-		align-items: stretch;
-	}
-
-	.job-tracker-filter-select {
-		width: 100%;
-	}
-
-	.job-tracker-kanban-column {
-		min-width: 220px;
-	}
-}
-
-@media (max-width: 600px) {
-	.job-tracker-view {
-		padding: 8px 10px;
-	}
-
 	.job-tracker-header-top {
 		flex-direction: column;
 		align-items: flex-start;

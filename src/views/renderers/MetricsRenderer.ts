@@ -1,4 +1,5 @@
 import { setIcon } from "obsidian";
+import { getStatusClassName } from "../../constants";
 import { SankeyDiagram, SankeyLink } from "../SankeyDiagram";
 import { JobTrackerView } from "../JobTrackerView";
 
@@ -68,7 +69,7 @@ export class MetricsRenderer {
 
 			const labelRow = barItem.createDiv({ cls: "job-tracker-funnel-label-row" });
 			const leftLabel = labelRow.createDiv({ cls: "job-tracker-funnel-left" });
-			leftLabel.createSpan({ text: st, cls: `job-tracker-status-badge status-${st.toLowerCase()}` });
+			leftLabel.createSpan({ text: st, cls: `job-tracker-status-badge ${getStatusClassName(st)}` });
 
 			const rightLabel = labelRow.createDiv({ cls: "job-tracker-funnel-right" });
 			rightLabel.createSpan({
@@ -78,7 +79,7 @@ export class MetricsRenderer {
 
 			const progressBg = barItem.createDiv({ cls: "job-tracker-progress-bg" });
 			const progressFill = progressBg.createDiv({
-				cls: `job-tracker-progress-fill status-${st.toLowerCase()}`,
+				cls: `job-tracker-progress-fill ${getStatusClassName(st)}`,
 			});
 			progressFill.style.width = `${pct}%`;
 		}
@@ -127,7 +128,7 @@ export class MetricsRenderer {
 			const activityList = activitySection.createDiv({ cls: "job-tracker-activity-list" });
 			for (const entry of m.allHistoryEntries.slice(0, 10)) {
 				const item = activityList.createDiv({ cls: "job-tracker-activity-item" });
-				item.createSpan({ cls: `job-tracker-activity-dot status-${entry.status.toLowerCase()}` });
+				item.createSpan({ cls: `job-tracker-activity-dot ${getStatusClassName(entry.status)}` });
 
 				const textContainer = item.createDiv({ cls: "job-tracker-activity-text" });
 				const titleRow = textContainer.createDiv({ cls: "job-tracker-activity-title-row" });
@@ -147,7 +148,7 @@ export class MetricsRenderer {
 				titleRow.createSpan({ text: `(${entry.role})` });
 				titleRow.createSpan({
 					text: entry.status,
-					cls: `job-tracker-status-badge status-${entry.status.toLowerCase()}`,
+					cls: `job-tracker-status-badge ${getStatusClassName(entry.status)}`,
 				});
 				titleRow.createSpan({ text: entry.date, cls: "job-tracker-activity-date" });
 
@@ -159,7 +160,13 @@ export class MetricsRenderer {
 	}
 
 	renderKpiCard(container: HTMLElement, label: string, value: string, icon: string, subtext: string) {
-		const card = container.createDiv({ cls: "job-tracker-kpi-card" });
+		const card = container.createDiv({
+			cls: "job-tracker-kpi-card",
+			attr: {
+				role: "region",
+				"aria-label": `${label}: ${value} (${subtext})`,
+			},
+		});
 		const top = card.createDiv({ cls: "job-tracker-kpi-top" });
 		top.createSpan({ text: label, cls: "job-tracker-kpi-label" });
 		const iconEl = top.createSpan({ cls: "job-tracker-kpi-icon" });
@@ -182,6 +189,7 @@ export class MetricsRenderer {
 
 		// Count transitions between nodes ensuring strict DAG property (no cycles)
 		const transitionMap = new Map<string, number>();
+		const adjList = new Map<string, Set<string>>();
 
 		// Helper to detect if adding fromNode -> toNode creates a cycle (i.e. toNode can already reach fromNode)
 		const wouldCreateCycle = (fromNode: string, toNode: string): boolean => {
@@ -191,10 +199,12 @@ export class MetricsRenderer {
 				const current = queue.shift()!;
 				if (current === fromNode) return true;
 				visited.add(current);
-				for (const key of transitionMap.keys()) {
-					const [u, v] = key.split("|||");
-					if (u === current && !visited.has(v)) {
-						queue.push(v);
+				const neighbors = adjList.get(current);
+				if (neighbors) {
+					for (const v of neighbors) {
+						if (!visited.has(v)) {
+							queue.push(v);
+						}
 					}
 				}
 			}
@@ -219,6 +229,12 @@ export class MetricsRenderer {
 			}
 
 			transitionMap.set(key, count);
+			let targets = adjList.get(cleanFrom);
+			if (!targets) {
+				targets = new Set<string>();
+				adjList.set(cleanFrom, targets);
+			}
+			targets.add(cleanTo);
 		};
 
 		// Track each application along the exact sequence of statuses it entered and exited

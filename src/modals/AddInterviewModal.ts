@@ -1,7 +1,7 @@
-import { App, Modal, Notice, Setting, TFile } from "obsidian";
+import { App, ButtonComponent, Notice, Setting } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { InterviewRound, InterviewRoundType, JobApplication } from "../types";
-import { SelectApplicationModal } from "./UpdateStatusModal";
+import { BaseApplicationModal } from "./BaseApplicationModal";
 
 export const INTERVIEW_TYPES: InterviewRoundType[] = [
 	"Recruiter Screen",
@@ -16,44 +16,30 @@ export const INTERVIEW_TYPES: InterviewRoundType[] = [
 ];
 
 /**
- * Modal dialog to schedule an interview round, generate prep notes, and update pipeline stage.
+ * Modal dialog to schedule a new interview round and optionally generate prep notes.
  */
-export class AddInterviewModal extends Modal {
-	plugin: JobApplicationTrackerPlugin;
-	application: JobApplication | null;
+export class AddInterviewModal extends BaseApplicationModal {
+	private onComplete?: () => void;
+	private roundType: InterviewRoundType = "Recruiter Screen";
+	private roundName = "Recruiter Screen";
+	private date = "";
+	private time = "";
+	private interviewers = "";
+	private createPrepNote = true;
+	private updateStatusToInterviewing = true;
 
-	roundType: InterviewRoundType = "Recruiter Screen";
-	roundName = "Recruiter Screen";
-	date = "";
-	time = "";
-	interviewers = "";
-	createPrepNote = true;
-	updateStatusToInterviewing = true;
-
-	constructor(app: App, plugin: JobApplicationTrackerPlugin, application: JobApplication | null = null) {
-		super(app);
-		this.plugin = plugin;
-		this.application = application;
+	constructor(
+		app: App,
+		plugin: JobApplicationTrackerPlugin,
+		application: JobApplication | null = null,
+		onComplete?: () => void
+	) {
+		super(app, plugin, application);
+		this.onComplete = onComplete;
 		this.date = plugin.appService.getTodayDateString();
 	}
 
-	async onOpen() {
-		const { contentEl } = this;
-		contentEl.empty();
-		contentEl.addClass("job-tracker-modal");
-
-		if (!this.application) {
-			new SelectApplicationModal(this.app, this.plugin, (selectedApp) => {
-				new AddInterviewModal(this.app, this.plugin, selectedApp).open();
-			}).open();
-			this.close();
-			return;
-		}
-
-		this.renderModal();
-	}
-
-	renderModal() {
+	renderContent(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 
@@ -76,80 +62,93 @@ export class AddInterviewModal extends Modal {
 				dropdown.setValue(this.roundType);
 				dropdown.onChange((value) => {
 					this.roundType = value as InterviewRoundType;
-					this.roundName = value;
-					this.renderModal();
+					if (this.roundName === "" || INTERVIEW_TYPES.includes(this.roundName as InterviewRoundType)) {
+						this.roundName = value;
+					}
+					this.renderContent();
 				});
 			});
 
-		// Round Name
+		// Round Custom Name
 		new Setting(contentEl)
-			.setName("Round Name")
-			.setDesc("Specific title for this interview stage")
-			.addText((text) =>
-				text.setValue(this.roundName).onChange((value) => {
-					this.roundName = value;
-				})
-			);
+			.setName("Round Display Name")
+			.setDesc("Custom name for this stage (e.g. 'Round 1 - Technical Screen')")
+			.addText((text) => {
+				text.inputEl.maxLength = 100;
+				text
+					.setPlaceholder("e.g. Technical Screen")
+					.setValue(this.roundName)
+					.onChange((value) => {
+						this.roundName = value;
+					});
+			});
 
 		// Date
 		new Setting(contentEl)
 			.setName("Interview Date")
-			.setDesc("Date of interview (YYYY-MM-DD)")
-			.addText((text) =>
-				text.setValue(this.date).onChange((value) => {
+			.setDesc("Date of the interview (YYYY-MM-DD)")
+			.addText((text) => {
+				text.inputEl.maxLength = 20;
+				text.setPlaceholder("YYYY-MM-DD").setValue(this.date).onChange((value) => {
 					this.date = value;
-				})
-			);
+				});
+			});
 
 		// Time
 		new Setting(contentEl)
-			.setName("Time")
-			.setDesc("e.g. 10:00 AM EST, 14:30")
-			.addText((text) =>
-				text.setPlaceholder("e.g. 2:00 PM EST").onChange((value) => {
+			.setName("Interview Time")
+			.setDesc("Time and time zone (e.g. '2:00 PM EST')")
+			.addText((text) => {
+				text.inputEl.maxLength = 30;
+				text.setPlaceholder("e.g. 2:00 PM EST").setValue(this.time).onChange((value) => {
 					this.time = value;
-				})
-			);
+				});
+			});
 
 		// Interviewers
 		new Setting(contentEl)
 			.setName("Interviewers / Panel")
 			.setDesc("Names and roles of the interviewers")
-			.addText((text) =>
-				text.setPlaceholder("e.g. Sarah Connor (VP Eng), John Smith (Tech Lead)").onChange((value) => {
+			.addText((text) => {
+				text.inputEl.maxLength = 200;
+				text.setPlaceholder("e.g. John Doe (EM), Jane Smith (Staff Eng)").setValue(this.interviewers).onChange((value) => {
 					this.interviewers = value;
-				})
-			);
+				});
+			});
 
-		// Options
+		// Generate Prep Note Toggle
 		new Setting(contentEl)
 			.setName("Generate Interview Prep Note")
-			.setDesc("Creates a linked prep note with STAR questions, company research, and questions to ask")
+			.setDesc("Create a structured Markdown prep note for this interview using your template")
 			.addToggle((toggle) =>
 				toggle.setValue(this.createPrepNote).onChange((value) => {
 					this.createPrepNote = value;
 				})
 			);
 
+		// Update Status Toggle
 		new Setting(contentEl)
 			.setName("Update Status to 'Interviewing'")
-			.setDesc("Automatically advance application status to Interviewing")
+			.setDesc("Automatically advance the application status if currently 'Applied' or 'Screening'")
 			.addToggle((toggle) =>
 				toggle.setValue(this.updateStatusToInterviewing).onChange((value) => {
 					this.updateStatusToInterviewing = value;
 				})
 			);
 
-		// Action buttons
+		// Submit button
+		let submitBtn: ButtonComponent;
 		new Setting(contentEl)
-			.addButton((btn) =>
+			.addButton((btn) => {
+				submitBtn = btn;
 				btn
 					.setButtonText("Schedule Interview")
 					.setCta()
 					.onClick(async () => {
-						await this.handleSubmit();
-					})
-			)
+						submitBtn.setDisabled(true);
+						await this.handleSubmit(submitBtn);
+					});
+			})
 			.addButton((btn) =>
 				btn.setButtonText("Cancel").onClick(() => {
 					this.close();
@@ -157,16 +156,22 @@ export class AddInterviewModal extends Modal {
 			);
 	}
 
-	async handleSubmit() {
+	private async handleSubmit(btn?: ButtonComponent): Promise<void> {
 		if (!this.application) return;
 		if (!this.roundName.trim()) {
 			new Notice("Please enter a round name.");
+			btn?.setDisabled(false);
+			return;
+		}
+		if (this.date.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(this.date.trim())) {
+			new Notice("Interview Date must be in YYYY-MM-DD format.");
+			btn?.setDisabled(false);
 			return;
 		}
 
 		try {
 			const interview: InterviewRound = {
-				id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+				id: crypto.randomUUID(),
 				roundName: this.roundName.trim(),
 				roundType: this.roundType,
 				date: this.date.trim() || undefined,
@@ -175,33 +180,32 @@ export class AddInterviewModal extends Modal {
 				status: "Scheduled",
 			};
 
-			const file = this.plugin.appService.resolveFile(this.application.filePath);
-			if (file instanceof TFile) {
-				const result = await this.plugin.appService.addInterviewToApplication(
-					file,
-					interview,
-					this.createPrepNote,
-					this.updateStatusToInterviewing
-				);
+			const file = this.resolveApplicationFile();
+			if (!file) {
+				btn?.setDisabled(false);
+				return;
+			}
 
-				this.close();
+			const result = await this.plugin.appService.addInterviewToApplication(
+				file,
+				interview,
+				this.createPrepNote,
+				this.updateStatusToInterviewing
+			);
 
-				// If prep note was generated, open it for immediate prep only if the main tracker page is not open in the main page section
-				if (result.prepFile && !this.plugin.isTrackerViewOpenInMain()) {
-					const leaf = this.app.workspace.getLeaf(false);
-					await leaf.openFile(result.prepFile);
-				}
-			} else {
-				new Notice("Application file could not be found. It may have been moved or deleted.");
+			this.close();
+			if (this.onComplete) {
+				this.onComplete();
+			}
+
+			// If prep note was generated, open it for immediate prep only if the main tracker page is not open in the main page section
+			if (result.prepFile && !this.plugin.isTrackerViewOpenInMain()) {
+				const leaf = this.app.workspace.getLeaf(false);
+				await leaf.openFile(result.prepFile);
 			}
 		} catch (err) {
-			console.error("Job Tracker: Modal action failed:", err);
-			new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+			btn?.setDisabled(false);
+			this.handleModalError("Add interview", err);
 		}
-	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
 	}
 }

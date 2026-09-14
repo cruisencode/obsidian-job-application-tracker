@@ -1,4 +1,4 @@
-import { App, normalizePath, PluginSettingTab, Setting, SettingDefinitionItem, TextAreaComponent } from "obsidian";
+import { App, debounce, normalizePath, PluginSettingTab, Setting, SettingDefinitionItem, TextAreaComponent } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { JobStatus } from "../types";
 import { DEFAULT_INTERVIEW_PREP_TEMPLATE, DEFAULT_SETTINGS } from "../constants";
@@ -6,13 +6,17 @@ import { DEFAULT_INTERVIEW_PREP_TEMPLATE, DEFAULT_SETTINGS } from "../constants"
 export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 	plugin: JobApplicationTrackerPlugin;
 
+	private debouncedSave = debounce(async () => {
+		await this.plugin.saveSettings();
+	}, 500);
+
 	constructor(app: App, plugin: JobApplicationTrackerPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
 	private sanitizeFolderPath(input: string, fallback: string): string {
-		const cleaned = input.trim().replace(/[\\:*?"<>|#^[\]]/g, "-");
+		const cleaned = input.trim().replace(/[\\:*?"<>|#^\[\]]/g, "-");
 		const normalized = normalizePath(cleaned);
 		return normalized === "." || !normalized ? fallback : normalized;
 	}
@@ -53,12 +57,12 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 								text
 									.setPlaceholder("Job Applications")
 									.setValue(this.plugin.settings.trackerFolderPath)
-									.onChange(async (value) => {
+									.onChange((value) => {
 										this.plugin.settings.trackerFolderPath = this.sanitizeFolderPath(
 											value,
 											DEFAULT_SETTINGS.trackerFolderPath
 										);
-										await this.plugin.saveSettings();
+										this.debouncedSave();
 									})
 							);
 						},
@@ -71,12 +75,12 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 								text
 									.setPlaceholder("Job Applications/Interviews")
 									.setValue(this.plugin.settings.interviewNotesFolderPath)
-									.onChange(async (value) => {
+									.onChange((value) => {
 										this.plugin.settings.interviewNotesFolderPath = this.sanitizeFolderPath(
 											value,
 											DEFAULT_SETTINGS.interviewNotesFolderPath
 										);
-										await this.plugin.saveSettings();
+										this.debouncedSave();
 									})
 							);
 						},
@@ -89,12 +93,12 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 								text
 									.setPlaceholder("Job Applications/Attachments")
 									.setValue(this.plugin.settings.attachmentsFolderPath || "Job Applications/Attachments")
-									.onChange(async (value) => {
+									.onChange((value) => {
 										this.plugin.settings.attachmentsFolderPath = this.sanitizeFolderPath(
 											value,
 											DEFAULT_SETTINGS.attachmentsFolderPath
 										);
-										await this.plugin.saveSettings();
+										this.debouncedSave();
 									})
 							);
 						},
@@ -144,14 +148,14 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 							setting.addTextArea((text) => {
 								text
 									.setValue(this.plugin.settings.defaultSourceOptions.join(", "))
-									.onChange(async (value) => {
+									.onChange((value) => {
 										const cleanSources = value
 											.split(",")
 											.map((s) => s.trim().replace(/[\\#^[\]]/g, ""))
 											.filter((s) => s.length > 0);
 										this.plugin.settings.defaultSourceOptions =
 											cleanSources.length > 0 ? cleanSources : [...DEFAULT_SETTINGS.defaultSourceOptions];
-										await this.plugin.saveSettings();
+										this.debouncedSave();
 									});
 								text.inputEl.rows = 2;
 							});
@@ -173,9 +177,9 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 									templateTextArea = textArea;
 									textArea
 										.setValue(this.plugin.settings.interviewPrepTemplate)
-										.onChange(async (value) => {
+										.onChange((value) => {
 											this.plugin.settings.interviewPrepTemplate = value;
-											await this.plugin.saveSettings();
+											this.debouncedSave();
 										});
 									textArea.inputEl.rows = 14;
 									textArea.inputEl.addClass("job-tracker-template-textarea");

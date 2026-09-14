@@ -1,5 +1,6 @@
 import { setIcon } from "obsidian";
-import { JobApplication } from "../../types";
+import { JobApplication, JobSortField } from "../../types";
+import { getStatusClassName } from "../../constants";
 import { UpdateStatusModal } from "../../modals/UpdateStatusModal";
 import { JobTrackerView } from "../JobTrackerView";
 
@@ -8,9 +9,14 @@ import { JobTrackerView } from "../JobTrackerView";
  */
 export class TableRenderer {
 	private view: JobTrackerView;
+	private displayedLimit = 50;
 
 	constructor(view: JobTrackerView) {
 		this.view = view;
+	}
+
+	resetPagination() {
+		this.displayedLimit = 50;
 	}
 
 	/**
@@ -18,13 +24,16 @@ export class TableRenderer {
 	 */
 	render(container: HTMLElement, apps: JobApplication[]) {
 		const tableWrapper = container.createDiv({ cls: "job-tracker-table-wrapper" });
-		const table = tableWrapper.createEl("table", { cls: "job-tracker-table" });
+		const table = tableWrapper.createEl("table", {
+			cls: "job-tracker-table",
+			attr: { role: "grid", "aria-label": "Job Applications" },
+		});
 
 		// Table Header
 		const thead = table.createEl("thead");
 		const headerRow = thead.createEl("tr");
 
-		const columns: { label: string; field: keyof JobApplication }[] = [
+		const columns: { label: string; field: JobSortField }[] = [
 			{ label: "Company", field: "company" },
 			{ label: "Role", field: "role" },
 			{ label: "Status", field: "status" },
@@ -70,7 +79,9 @@ export class TableRenderer {
 
 		// Table Body
 		const tbody = table.createEl("tbody");
-		for (const app of apps) {
+		const displayedApps = apps.slice(0, this.displayedLimit);
+
+		for (const app of displayedApps) {
 			const tr = tbody.createEl("tr");
 
 			// Company
@@ -95,7 +106,7 @@ export class TableRenderer {
 			const tdStatus = tr.createEl("td");
 			const statusBadge = tdStatus.createSpan({
 				text: app.status,
-				cls: `job-tracker-status-badge status-${app.status.toLowerCase()}`,
+				cls: `job-tracker-status-badge ${getStatusClassName(app.status)}`,
 				attr: { role: "button", tabindex: "0", "aria-label": `Change status: ${app.status}` },
 			});
 			statusBadge.onclick = () => {
@@ -160,6 +171,23 @@ export class TableRenderer {
 			setIcon(actionMenuBtn, "more-horizontal");
 			actionMenuBtn.onclick = (e) => {
 				this.view.showCardMenu(e, app);
+			};
+		}
+
+		if (apps.length > this.displayedLimit) {
+			const paginationDiv = container.createDiv({ cls: "job-tracker-pagination-bar" });
+			paginationDiv.createSpan({
+				text: `Showing ${displayedApps.length} of ${apps.length} applications`,
+				cls: "text-muted",
+			});
+			const remaining = apps.length - this.displayedLimit;
+			const loadMoreBtn = paginationDiv.createEl("button", {
+				text: `Load More (${Math.min(50, remaining)} more)`,
+				cls: "mod-cta",
+			});
+			loadMoreBtn.onclick = () => {
+				this.displayedLimit += 50;
+				this.view.renderContentOnly();
 			};
 		}
 	}

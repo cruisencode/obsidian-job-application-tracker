@@ -1,46 +1,33 @@
-import { App, Modal, Notice, Setting, TFile } from "obsidian";
+import { App, ButtonComponent, Notice, Setting } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { Contact, JobApplication } from "../types";
-import { SelectApplicationModal } from "./UpdateStatusModal";
+import { sanitizeEmail, sanitizeUrl } from "../services/ApplicationService";
+import { BaseApplicationModal } from "./BaseApplicationModal";
 
 /**
  * Modal dialog to add a key contact (recruiter, hiring manager, etc.) to a job application.
  */
-export class AddContactModal extends Modal {
-	plugin: JobApplicationTrackerPlugin;
-	application: JobApplication | null;
+export class AddContactModal extends BaseApplicationModal {
+	private onComplete?: () => void;
+	private name = "";
+	private role = "Recruiter";
+	private customRole = "";
+	private email = "";
+	private phone = "";
+	private linkedin = "";
+	private notes = "";
 
-	name = "";
-	role = "Recruiter";
-	customRole = "";
-	email = "";
-	phone = "";
-	linkedin = "";
-	notes = "";
-
-	constructor(app: App, plugin: JobApplicationTrackerPlugin, application: JobApplication | null = null) {
-		super(app);
-		this.plugin = plugin;
-		this.application = application;
+	constructor(
+		app: App,
+		plugin: JobApplicationTrackerPlugin,
+		application: JobApplication | null = null,
+		onComplete?: () => void
+	) {
+		super(app, plugin, application);
+		this.onComplete = onComplete;
 	}
 
-	async onOpen() {
-		const { contentEl } = this;
-		contentEl.empty();
-		contentEl.addClass("job-tracker-modal");
-
-		if (!this.application) {
-			new SelectApplicationModal(this.app, this.plugin, (selectedApp) => {
-				new AddContactModal(this.app, this.plugin, selectedApp).open();
-			}).open();
-			this.close();
-			return;
-		}
-
-		this.renderModal();
-	}
-
-	renderModal() {
+	renderContent(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 
@@ -48,98 +35,121 @@ export class AddContactModal extends Modal {
 
 		contentEl.createEl("h2", { text: `Add Contact: ${this.application.company}` });
 		contentEl.createEl("p", {
-			text: `${this.application.role}`,
+			text: `Role: ${this.application.role}`,
 			cls: "job-tracker-modal-subtitle",
 		});
 
 		// Contact Name
 		new Setting(contentEl)
 			.setName("Contact Name")
-			.setDesc("Full name (required)")
+			.setDesc("Full name of the contact")
 			.addText((text) => {
-				text.setPlaceholder("e.g. Alex Morgan").onChange((value) => {
-					this.name = value;
-				});
+				text.inputEl.maxLength = 100;
+				text
+					.setPlaceholder("e.g. Jane Doe")
+					.setValue(this.name)
+					.onChange((value) => {
+						this.name = value;
+					});
 				text.inputEl.focus();
 			});
 
-		// Role Type
+		// Contact Role Dropdown
 		new Setting(contentEl)
-			.setName("Contact Role")
-			.setDesc("Relationship or role in the hiring process")
+			.setName("Role / Relationship")
+			.setDesc("What is this person's role in the hiring process?")
 			.addDropdown((dropdown) => {
-				dropdown.addOption("Recruiter", "Recruiter");
-				dropdown.addOption("Recruiting Coordinator", "Recruiting Coordinator");
-				dropdown.addOption("Hiring Manager", "Hiring Manager");
-				dropdown.addOption("Peer / Team Member", "Peer / Team Member");
-				dropdown.addOption("Executive", "Executive");
-				dropdown.addOption("Referrer", "Referrer");
-				dropdown.addOption("Other", "Other (Custom)");
+				const roles = [
+					"Recruiter",
+					"Hiring Manager",
+					"Sourcer",
+					"Interviewer",
+					"Referral / Connection",
+					"Peer / Team Member",
+					"HR / People Ops",
+					"Executive / VP",
+					"Other",
+				];
+				for (const r of roles) {
+					dropdown.addOption(r, r);
+				}
 				dropdown.setValue(this.role);
 				dropdown.onChange((value) => {
 					this.role = value;
-					this.renderModal();
+					this.renderContent();
 				});
 			});
 
+		// Custom role input if "Other" is chosen
 		if (this.role === "Other") {
 			new Setting(contentEl)
-				.setName("Custom Role Name")
-				.addText((text) =>
-					text.setPlaceholder("e.g. Lead Architect").onChange((value) => {
-						this.customRole = value;
-					})
-				);
+				.setName("Custom Role Description")
+				.addText((text) => {
+					text.inputEl.maxLength = 100;
+					text
+						.setPlaceholder("e.g. Future Teammate")
+						.setValue(this.customRole)
+						.onChange((val) => {
+							this.customRole = val;
+						});
+				});
 		}
 
 		// Email
 		new Setting(contentEl)
-			.setName("Email")
-			.addText((text) =>
-				text.setPlaceholder("alex.morgan@company.com").onChange((value) => {
+			.setName("Email Address")
+			.addText((text) => {
+				text.inputEl.maxLength = 100;
+				text.setPlaceholder("jane@company.com").setValue(this.email).onChange((value) => {
 					this.email = value;
-				})
-			);
+				});
+			});
 
 		// Phone
 		new Setting(contentEl)
 			.setName("Phone Number")
-			.addText((text) =>
-				text.setPlaceholder("+1 (555) 000-0000").onChange((value) => {
+			.addText((text) => {
+				text.inputEl.maxLength = 50;
+				text.setPlaceholder("+1 (555) 000-0000").setValue(this.phone).onChange((value) => {
 					this.phone = value;
-				})
-			);
+				});
+			});
 
-		// LinkedIn URL
+		// LinkedIn
 		new Setting(contentEl)
 			.setName("LinkedIn Profile")
-			.addText((text) =>
-				text.setPlaceholder("https://linkedin.com/in/...").onChange((value) => {
+			.addText((text) => {
+				text.inputEl.maxLength = 500;
+				text.setPlaceholder("https://linkedin.com/in/...").setValue(this.linkedin).onChange((value) => {
 					this.linkedin = value;
-				})
-			);
+				});
+			});
 
 		// Notes
 		new Setting(contentEl)
 			.setName("Notes")
 			.setDesc("Conversation notes, time zone, personal details, etc.")
 			.addTextArea((text) => {
-				text.setPlaceholder("Notes...").onChange((value) => {
+				text.inputEl.maxLength = 2000;
+				text.setPlaceholder("Notes...").setValue(this.notes).onChange((value) => {
 					this.notes = value;
 				});
 				text.inputEl.rows = 3;
 			});
 
 		// Submit button
+		let submitBtn: ButtonComponent;
 		new Setting(contentEl)
-			.addButton((btn) =>
+			.addButton((btn) => {
+				submitBtn = btn;
 				btn
 					.setButtonText("Add Contact")
 					.setCta()
 					.onClick(async () => {
-						await this.handleSubmit();
-					})
-			)
+						submitBtn.setDisabled(true);
+						await this.handleSubmit(submitBtn);
+					});
+			})
 			.addButton((btn) =>
 				btn.setButtonText("Cancel").onClick(() => {
 					this.close();
@@ -147,10 +157,21 @@ export class AddContactModal extends Modal {
 			);
 	}
 
-	async handleSubmit() {
+	private async handleSubmit(btn?: ButtonComponent): Promise<void> {
 		if (!this.application) return;
 		if (!this.name.trim()) {
 			new Notice("Please enter a contact name.");
+			btn?.setDisabled(false);
+			return;
+		}
+		if (this.email.trim() && !sanitizeEmail(this.email.trim())) {
+			new Notice("Please enter a valid email address.");
+			btn?.setDisabled(false);
+			return;
+		}
+		if (this.linkedin.trim() && !sanitizeUrl(this.linkedin.trim())) {
+			new Notice("LinkedIn URL must begin with http:// or https://");
+			btn?.setDisabled(false);
 			return;
 		}
 
@@ -158,7 +179,7 @@ export class AddContactModal extends Modal {
 			const resolvedRole = this.role === "Other" ? (this.customRole.trim() || "Other") : this.role;
 
 			const contact: Contact = {
-				id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+				id: crypto.randomUUID(),
 				name: this.name.trim(),
 				role: resolvedRole,
 				email: this.email.trim() || undefined,
@@ -167,21 +188,20 @@ export class AddContactModal extends Modal {
 				notes: this.notes.trim() || undefined,
 			};
 
-			const file = this.plugin.appService.resolveFile(this.application.filePath);
-			if (file instanceof TFile) {
-				await this.plugin.appService.addContactToApplication(file, contact);
-				this.close();
-			} else {
-				new Notice("Application file could not be found. It may have been moved or deleted.");
+			const file = this.resolveApplicationFile();
+			if (!file) {
+				btn?.setDisabled(false);
+				return;
+			}
+
+			await this.plugin.appService.addContactToApplication(file, contact);
+			this.close();
+			if (this.onComplete) {
+				this.onComplete();
 			}
 		} catch (err) {
-			console.error("Job Tracker: Modal action failed:", err);
-			new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+			btn?.setDisabled(false);
+			this.handleModalError("Add contact", err);
 		}
-	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
 	}
 }

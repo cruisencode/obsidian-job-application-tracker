@@ -1,5 +1,6 @@
 import { setIcon, TFile } from "obsidian";
 import { JobApplication } from "../../types";
+import { getStatusClassName } from "../../constants";
 import { NewApplicationModal } from "../../modals/NewApplicationModal";
 import { UpdateStatusModal } from "../../modals/UpdateStatusModal";
 import { JobTrackerView } from "../JobTrackerView";
@@ -7,15 +8,17 @@ import { JobTrackerView } from "../JobTrackerView";
 /**
  * Renderer for the Kanban view mode, handling column stages, drag-and-drop, and card interactions.
  */
+const KANBAN_DRAG_MIME = "application/x-job-tracker-filepath";
+
 export class KanbanRenderer {
-	private view: JobTrackerView;
+	view: JobTrackerView;
 
 	constructor(view: JobTrackerView) {
 		this.view = view;
 	}
 
 	/**
-	 * Renders the full Kanban board across all configured status columns.
+	 * Renders the Kanban board with drag-and-drop columns for each status.
 	 */
 	render(container: HTMLElement, apps: JobApplication[]) {
 		const board = container.createDiv({ cls: "job-tracker-kanban-board" });
@@ -25,22 +28,32 @@ export class KanbanRenderer {
 			const colApps = apps.filter((a) => a.status === status);
 
 			const column = board.createDiv({
-				cls: `job-tracker-kanban-column status-${status.toLowerCase()}`,
-				attr: { role: "region", "aria-label": `${status} column` },
+				cls: `job-tracker-kanban-column ${getStatusClassName(status)}`,
+				attr: { role: "region", "aria-label": `${status} column, ${colApps.length} applications` },
 			});
 
-			// Drag and drop event handlers on column
+			// Drag and drop event handlers on column with counter to eliminate child element flicker
+			let dragEnterCount = 0;
+			column.ondragenter = (e) => {
+				if (e.dataTransfer?.types.includes(KANBAN_DRAG_MIME)) {
+					dragEnterCount++;
+					column.addClass("drag-over");
+				}
+			};
 			column.ondragover = (e) => {
 				e.preventDefault();
-				column.addClass("drag-over");
 			};
 			column.ondragleave = () => {
-				column.removeClass("drag-over");
+				dragEnterCount = Math.max(0, dragEnterCount - 1);
+				if (dragEnterCount === 0) {
+					column.removeClass("drag-over");
+				}
 			};
 			column.ondrop = async (e) => {
 				e.preventDefault();
+				dragEnterCount = 0;
 				column.removeClass("drag-over");
-				const filePath = e.dataTransfer?.getData("text/plain");
+				const filePath = e.dataTransfer?.getData(KANBAN_DRAG_MIME);
 				if (filePath) {
 					const file = this.view.plugin.appService.resolveFile(filePath);
 					if (file instanceof TFile) {
@@ -62,7 +75,6 @@ export class KanbanRenderer {
 			setIcon(colAddBtn, "plus");
 			colAddBtn.onclick = () => {
 				const modal = new NewApplicationModal(this.view.app, this.view.plugin);
-				modal.status = status;
 				modal.open();
 			};
 
@@ -83,12 +95,35 @@ export class KanbanRenderer {
 	renderCard(container: HTMLElement, app: JobApplication) {
 		const card = container.createDiv({
 			cls: "job-tracker-kanban-card",
-			attr: { draggable: "true", role: "article", "aria-label": `${app.company} - ${app.role}` },
+			attr: {
+				draggable: "true",
+				role: "article",
+				tabindex: "0",
+				"aria-label": `${app.company} - ${app.role} (${app.status}). Press Alt+Right or Alt+Left arrow to change stage.`,
+			},
 		});
+
+		// Keyboard navigation between Kanban columns
+		card.onkeydown = async (e) => {
+			if (e.altKey && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+				e.preventDefault();
+				const statuses = this.view.plugin.settings.statuses;
+				const currentIndex = statuses.indexOf(app.status);
+				if (currentIndex === -1) return;
+				const targetIndex = e.key === "ArrowRight" ? currentIndex + 1 : currentIndex - 1;
+				if (targetIndex >= 0 && targetIndex < statuses.length) {
+					const nextStatus = statuses[targetIndex];
+					const file = this.view.plugin.appService.resolveFile(app.filePath);
+					if (file instanceof TFile) {
+						await this.view.plugin.appService.updateStatus(file, nextStatus);
+					}
+				}
+			}
+		};
 
 		// Drag events
 		card.ondragstart = (e) => {
-			e.dataTransfer?.setData("text/plain", app.filePath);
+			e.dataTransfer?.setData(KANBAN_DRAG_MIME, app.filePath);
 			card.addClass("is-dragging");
 		};
 		card.ondragend = () => {
@@ -116,7 +151,7 @@ export class KanbanRenderer {
 		const actionsGroup = cardTop.createDiv({ cls: "job-tracker-card-actions-group" });
 		const statusPill = actionsGroup.createSpan({
 			text: app.status,
-			cls: `job-tracker-status-badge status-${app.status.toLowerCase()}`,
+			cls: `job-tracker-status-badge ${getStatusClassName(app.status)}`,
 			attr: { "aria-label": `Change status (Current: ${app.status})`, role: "button", tabindex: "0" },
 		});
 		statusPill.onclick = (e) => {

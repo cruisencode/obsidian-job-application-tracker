@@ -1,4 +1,4 @@
-export type JobStatus =
+export type DefaultJobStatus =
 	| "Wishlist"
 	| "Applied"
 	| "Screening"
@@ -9,12 +9,20 @@ export type JobStatus =
 	| "Withdrawn"
 	| "Ghosted";
 
-export const FINAL_STATUSES: readonly JobStatus[] = [
+export type JobStatus = DefaultJobStatus | (string & {});
+
+export const FINAL_STATUSES = [
 	"Accepted",
 	"Rejected",
 	"Withdrawn",
 	"Ghosted",
-];
+] as const;
+
+export const FINAL_STATUS_SET: ReadonlySet<string> = new Set(FINAL_STATUSES);
+
+export function isFinalStatus(status: string): boolean {
+	return FINAL_STATUS_SET.has(status);
+}
 
 export interface Contact {
 	id: string;
@@ -113,6 +121,13 @@ export interface JobApplicationFrontMatter {
 	interviews?: InterviewRound[];
 	statusHistory?: StatusHistoryEntry[];
 	[key: string]: unknown;
-}
-
-
+}export type JobSortField =
+	| "company"
+	| "role"
+	| "status"
+	| "dateApplied"
+	| "location"
+	| "salary"
+	| "source"
+	| "lastUpdated"
+	| "followUpDate";
