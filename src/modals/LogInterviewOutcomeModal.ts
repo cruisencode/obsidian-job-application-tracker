@@ -1,43 +1,29 @@
-import { App, Modal, Notice, Setting, TFile } from "obsidian";
+import { App, ButtonComponent, Setting } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { JobApplication, JobStatus } from "../types";
-import { SelectApplicationModal } from "./UpdateStatusModal";
+import { BaseApplicationModal } from "./BaseApplicationModal";
 
 /**
  * Modal dialog to log interview round debrief notes, record completion outcome, and advance pipeline stage.
  */
-export class LogInterviewOutcomeModal extends Modal {
-	plugin: JobApplicationTrackerPlugin;
-	application: JobApplication | null;
-
+export class LogInterviewOutcomeModal extends BaseApplicationModal {
+	private onComplete?: () => void;
 	selectedInterviewId = "";
-	status: "Completed" | "Cancelled" = "Completed";
-	outcomeNotes = "";
-	nextStage: JobStatus | "" = "";
+	private status: "Completed" | "Cancelled" = "Completed";
+	private outcomeNotes = "";
+	private nextStage: JobStatus | "" = "";
 
-	constructor(app: App, plugin: JobApplicationTrackerPlugin, application: JobApplication | null = null) {
-		super(app);
-		this.plugin = plugin;
-		this.application = application;
+	constructor(
+		app: App,
+		plugin: JobApplicationTrackerPlugin,
+		application: JobApplication | null = null,
+		onComplete?: () => void
+	) {
+		super(app, plugin, application);
+		this.onComplete = onComplete;
 	}
 
-	async onOpen() {
-		const { contentEl } = this;
-		contentEl.empty();
-		contentEl.addClass("job-tracker-modal");
-
-		if (!this.application) {
-			new SelectApplicationModal(this.app, this.plugin, (selectedApp) => {
-				new LogInterviewOutcomeModal(this.app, this.plugin, selectedApp).open();
-			}).open();
-			this.close();
-			return;
-		}
-
-		this.renderModal();
-	}
-
-	renderModal() {
+	renderContent(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 
@@ -64,42 +50,50 @@ export class LogInterviewOutcomeModal extends Modal {
 			this.selectedInterviewId = interviews[0].id;
 		}
 
-		// Interview selector
+		// Interview Round Selector
 		new Setting(contentEl)
-			.setName("Select Interview")
-			.setDesc("Which interview round are you debriefing?")
+			.setName("Interview Round")
+			.setDesc("Select the round to record an outcome for")
 			.addDropdown((dropdown) => {
 				for (const iv of interviews) {
-					const label = `${iv.roundName} (${iv.status}${iv.date ? ` - ${iv.date}` : ""})`;
-					dropdown.addOption(iv.id, label);
+					dropdown.addOption(iv.id, `${iv.roundName} (${iv.status})`);
 				}
 				dropdown.setValue(this.selectedInterviewId);
-				dropdown.onChange((value) => {
-					this.selectedInterviewId = value;
+				dropdown.onChange((val) => {
+					this.selectedInterviewId = val;
+					const selected = interviews.find((i) => i.id === val);
+					if (selected && selected.outcomeNotes) {
+						this.outcomeNotes = selected.outcomeNotes;
+					}
+					this.renderContent();
 				});
 			});
 
-		// Status
+		// Status (Completed / Cancelled)
 		new Setting(contentEl)
-			.setName("Interview Outcome")
-			.setDesc("Mark interview as completed or cancelled")
+			.setName("Round Outcome")
+			.setDesc("Mark this round as completed or cancelled")
 			.addDropdown((dropdown) => {
-				dropdown.addOption("Completed", "Completed");
+				dropdown.addOption("Completed", "Completed / Held");
 				dropdown.addOption("Cancelled", "Cancelled");
 				dropdown.setValue(this.status);
-				dropdown.onChange((value) => {
-					this.status = value as "Completed" | "Cancelled";
+				dropdown.onChange((val) => {
+					this.status = val as "Completed" | "Cancelled";
 				});
 			});
 
-		// Notes
+		// Outcome / Debrief Notes
 		new Setting(contentEl)
-			.setName("Debrief & Notes")
-			.setDesc("Key questions asked, feedback received, vibe check, or self-assessment")
+			.setName("Debrief Notes & Feedback")
+			.setDesc("What questions were asked? What went well? Areas for follow-up?")
 			.addTextArea((text) => {
-				text.setPlaceholder("Debrief notes...").onChange((value) => {
-					this.outcomeNotes = value;
-				});
+				text.inputEl.maxLength = 2000;
+				text
+					.setPlaceholder("Debrief notes, topics discussed, impressions...")
+					.setValue(this.outcomeNotes)
+					.onChange((value) => {
+						this.outcomeNotes = value;
+					});
 				text.inputEl.rows = 4;
 			});
 
@@ -114,20 +108,23 @@ export class LogInterviewOutcomeModal extends Modal {
 				}
 				dropdown.setValue(this.nextStage);
 				dropdown.onChange((value) => {
-					this.nextStage = value as JobStatus | "";
+					this.nextStage = value;
 				});
 			});
 
 		// Action buttons
+		let submitBtn: ButtonComponent;
 		new Setting(contentEl)
-			.addButton((btn) =>
+			.addButton((btn) => {
+				submitBtn = btn;
 				btn
 					.setButtonText("Save Outcome")
 					.setCta()
 					.onClick(async () => {
-						await this.handleSubmit();
-					})
-			)
+						submitBtn.setDisabled(true);
+						await this.handleSubmit(submitBtn);
+					});
+			})
 			.addButton((btn) =>
 				btn.setButtonText("Cancel").onClick(() => {
 					this.close();
@@ -135,31 +132,30 @@ export class LogInterviewOutcomeModal extends Modal {
 			);
 	}
 
-	async handleSubmit() {
+	private async handleSubmit(btn?: ButtonComponent): Promise<void> {
 		if (!this.application || !this.selectedInterviewId) return;
 
 		try {
-			const file = this.plugin.appService.resolveFile(this.application.filePath);
-			if (file instanceof TFile) {
-				await this.plugin.appService.updateInterviewOutcome(
-					file,
-					this.selectedInterviewId,
-					this.status,
-					this.outcomeNotes.trim() || undefined,
-					this.nextStage || undefined
-				);
-				this.close();
-			} else {
-				new Notice("Application file could not be found. It may have been moved or deleted.");
+			const file = this.resolveApplicationFile();
+			if (!file) {
+				btn?.setDisabled(false);
+				return;
+			}
+
+			await this.plugin.appService.updateInterviewOutcome(
+				file,
+				this.selectedInterviewId,
+				this.status,
+				this.outcomeNotes.trim() || undefined,
+				this.nextStage || undefined
+			);
+			this.close();
+			if (this.onComplete) {
+				this.onComplete();
 			}
 		} catch (err) {
-			console.error("Job Tracker: Modal action failed:", err);
-			new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+			btn?.setDisabled(false);
+			this.handleModalError("Save interview outcome", err);
 		}
-	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
 	}
 }

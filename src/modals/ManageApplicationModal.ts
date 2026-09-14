@@ -1,19 +1,29 @@
-import { App, Modal, Notice, Setting, TFile, setIcon } from "obsidian";
+import { App, Notice, Setting, TFile, setIcon } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { JobApplication } from "../types";
-import { SelectApplicationModal } from "./UpdateStatusModal";
 import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 import { AddContactModal } from "./AddContactModal";
 import { AddInterviewModal } from "./AddInterviewModal";
 import { LogInterviewOutcomeModal } from "./LogInterviewOutcomeModal";
+import { EditApplicationModal } from "./EditApplicationModal";
+import { BaseApplicationModal } from "./BaseApplicationModal";
 
 /**
  * Comprehensive management modal for viewing and managing an application's overview, contacts, and interview rounds.
  */
-export class ManageApplicationModal extends Modal {
-	plugin: JobApplicationTrackerPlugin;
-	application: JobApplication | null;
-	activeTab: "overview" | "contacts" | "interviews" = "overview";
+export class ManageApplicationModal extends BaseApplicationModal {
+	private activeTab: "overview" | "contacts" | "interviews" = "overview";
+
+	private reopenWithFreshData(tab: "overview" | "contacts" | "interviews"): void {
+		if (!this.application) return;
+		const file = this.resolveApplicationFile();
+		let freshApp = this.application;
+		if (file instanceof TFile) {
+			const cached = this.plugin.appService.getApplicationFromCache(file);
+			if (cached) freshApp = cached;
+		}
+		new ManageApplicationModal(this.app, this.plugin, freshApp, tab).open();
+	}
 
 	constructor(
 		app: App,
@@ -21,35 +31,17 @@ export class ManageApplicationModal extends Modal {
 		application: JobApplication | null = null,
 		defaultTab: "overview" | "contacts" | "interviews" = "overview"
 	) {
-		super(app);
-		this.plugin = plugin;
-		this.application = application;
+		super(app, plugin, application);
 		this.activeTab = defaultTab;
 	}
 
-	async onOpen() {
-		const { contentEl } = this;
-		contentEl.empty();
-		contentEl.addClass("job-tracker-modal");
-
-		if (!this.application) {
-			new SelectApplicationModal(this.app, this.plugin, (selectedApp) => {
-				new ManageApplicationModal(this.app, this.plugin, selectedApp, this.activeTab).open();
-			}).open();
-			this.close();
-			return;
-		}
-
-		this.renderModal();
-	}
-
-	renderModal() {
+	renderContent(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 
 		if (!this.application) return;
 
-		// Re-fetch fresh application data from file
+		// Re-fetch fresh application data from file if available
 		const file = this.plugin.appService.resolveFile(this.application.filePath);
 		if (file instanceof TFile) {
 			const freshApp = this.plugin.appService.getApplicationFromCache(file);
@@ -83,18 +75,27 @@ export class ManageApplicationModal extends Modal {
 				cls: `job-tracker-mode-btn ${isActive ? "is-active" : ""}`,
 				text: tab.label,
 				attr: {
+					id: `tab-${tab.id}`,
 					role: "tab",
+					"aria-controls": `tabpanel-${tab.id}`,
 					"aria-selected": `${isActive}`,
 					tabindex: isActive ? "0" : "-1",
 				},
 			});
 			tabBtn.onclick = () => {
 				this.activeTab = tab.id;
-				this.renderModal();
+				this.renderContent();
 			};
 		}
 
-		const tabContainer = contentEl.createDiv({ cls: "job-tracker-modal-tab-content" });
+		const tabContainer = contentEl.createDiv({
+			cls: "job-tracker-modal-tab-content",
+			attr: {
+				role: "tabpanel",
+				id: `tabpanel-${this.activeTab}`,
+				"aria-labelledby": `tab-${this.activeTab}`,
+			},
+		});
 
 		if (this.activeTab === "overview") {
 			this.renderOverviewTab(tabContainer);
@@ -105,7 +106,7 @@ export class ManageApplicationModal extends Modal {
 		}
 	}
 
-	renderOverviewTab(container: HTMLElement) {
+	private renderOverviewTab(container: HTMLElement): void {
 		if (!this.application) return;
 
 		container.createEl("p", {
@@ -114,12 +115,24 @@ export class ManageApplicationModal extends Modal {
 		});
 
 		new Setting(container)
+			.setName("Edit Application Details")
+			.setDesc("Edit role, company, status, dates, compensation, and other details")
+			.addButton((btn) =>
+				btn.setButtonText("Edit Details").onClick(() => {
+					this.close();
+					new EditApplicationModal(this.app, this.plugin, this.application, () => {
+						this.reopenWithFreshData("overview");
+					}).open();
+				})
+			);
+
+		new Setting(container)
 			.setName("Open Application Note")
 			.setDesc("Open the full Markdown note in your workspace")
 			.addButton((btn) =>
 				btn.setButtonText("Open Note").onClick(async () => {
 					this.close();
-					const file = this.plugin.appService.resolveFile(this.application!.filePath);
+					const file = this.resolveApplicationFile();
 					if (file instanceof TFile) {
 						const leaf = this.plugin.isTrackerViewOpenInMain()
 							? this.app.workspace.getLeaf("tab")
@@ -163,16 +176,13 @@ export class ManageApplicationModal extends Modal {
 							"Delete Application",
 							async () => {
 								try {
-									const file = this.plugin.appService.resolveFile(this.application!.filePath);
+									const file = this.resolveApplicationFile();
 									if (file instanceof TFile) {
 										await this.plugin.appService.deleteApplication(file);
 										this.close();
-									} else {
-										new Notice("Application file could not be found. It may have been moved or deleted.");
 									}
 								} catch (err) {
-									console.error("Job Tracker: Modal action failed:", err);
-									new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+									this.handleModalError("Delete application", err);
 								}
 							}
 						).open();
@@ -180,7 +190,7 @@ export class ManageApplicationModal extends Modal {
 			);
 	}
 
-	renderContactsTab(container: HTMLElement) {
+	private renderContactsTab(container: HTMLElement): void {
 		if (!this.application) return;
 
 		new Setting(container)
@@ -191,8 +201,10 @@ export class ManageApplicationModal extends Modal {
 					.setButtonText("+ Add Contact")
 					.setCta()
 					.onClick(() => {
-						new AddContactModal(this.app, this.plugin, this.application).open();
 						this.close();
+						new AddContactModal(this.app, this.plugin, this.application, () => {
+							this.reopenWithFreshData("contacts");
+						}).open();
 					})
 			);
 
@@ -217,10 +229,26 @@ export class ManageApplicationModal extends Modal {
 			nameRow.createSpan({ text: `(${contact.role})`, cls: "text-muted" });
 
 			const detailsRow = infoDiv.createDiv({ cls: "job-tracker-list-details" });
-			if (contact.email) detailsRow.createSpan({ text: `✉️ ${contact.email}` });
-			if (contact.phone) detailsRow.createSpan({ text: `📞 ${contact.phone}` });
-			if (contact.linkedin) detailsRow.createSpan({ text: `🔗 LinkedIn` });
-			if (contact.notes) detailsRow.createSpan({ text: `📝 ${contact.notes}`, cls: "activity-note" });
+			if (contact.email) {
+				const item = detailsRow.createSpan({ cls: "job-tracker-detail-item" });
+				setIcon(item.createSpan({ cls: "job-tracker-detail-icon" }), "mail");
+				item.createSpan({ text: ` ${contact.email}` });
+			}
+			if (contact.phone) {
+				const item = detailsRow.createSpan({ cls: "job-tracker-detail-item" });
+				setIcon(item.createSpan({ cls: "job-tracker-detail-icon" }), "phone");
+				item.createSpan({ text: ` ${contact.phone}` });
+			}
+			if (contact.linkedin) {
+				const item = detailsRow.createSpan({ cls: "job-tracker-detail-item" });
+				setIcon(item.createSpan({ cls: "job-tracker-detail-icon" }), "link");
+				item.createSpan({ text: " LinkedIn" });
+			}
+			if (contact.notes) {
+				const item = detailsRow.createSpan({ cls: "job-tracker-detail-item activity-note" });
+				setIcon(item.createSpan({ cls: "job-tracker-detail-icon" }), "file-text");
+				item.createSpan({ text: ` ${contact.notes}` });
+			}
 
 			const actionsDiv = itemCard.createDiv({ cls: "job-tracker-list-actions" });
 
@@ -237,16 +265,13 @@ export class ManageApplicationModal extends Modal {
 					"Remove Contact",
 					async () => {
 						try {
-							const file = this.plugin.appService.resolveFile(this.application!.filePath);
+							const file = this.resolveApplicationFile();
 							if (file instanceof TFile) {
 								await this.plugin.appService.deleteContact(file, contact.id);
-								this.renderModal();
-							} else {
-								new Notice("Application file could not be found. It may have been moved or deleted.");
+								this.renderContent();
 							}
 						} catch (err) {
-							console.error("Job Tracker: Modal action failed:", err);
-							new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+							this.handleModalError("Delete contact", err);
 						}
 					}
 				).open();
@@ -254,7 +279,7 @@ export class ManageApplicationModal extends Modal {
 		}
 	}
 
-	renderInterviewsTab(container: HTMLElement) {
+	private renderInterviewsTab(container: HTMLElement): void {
 		if (!this.application) return;
 
 		new Setting(container)
@@ -265,8 +290,10 @@ export class ManageApplicationModal extends Modal {
 					.setButtonText("+ Schedule Interview")
 					.setCta()
 					.onClick(() => {
-						new AddInterviewModal(this.app, this.plugin, this.application).open();
 						this.close();
+						new AddInterviewModal(this.app, this.plugin, this.application, () => {
+							this.reopenWithFreshData("interviews");
+						}).open();
 					})
 			);
 
@@ -294,9 +321,21 @@ export class ManageApplicationModal extends Modal {
 			});
 
 			const detailsRow = infoDiv.createDiv({ cls: "job-tracker-list-details" });
-			if (iv.date) detailsRow.createSpan({ text: `📅 ${iv.date} ${iv.time || ""}` });
-			if (iv.interviewers) detailsRow.createSpan({ text: `👥 ${iv.interviewers}` });
-			if (iv.outcomeNotes) detailsRow.createSpan({ text: `💬 ${iv.outcomeNotes}`, cls: "activity-note" });
+			if (iv.date) {
+				const item = detailsRow.createSpan({ cls: "job-tracker-detail-item" });
+				setIcon(item.createSpan({ cls: "job-tracker-detail-icon" }), "calendar");
+				item.createSpan({ text: ` ${iv.date} ${iv.time || ""}`.trim() });
+			}
+			if (iv.interviewers) {
+				const item = detailsRow.createSpan({ cls: "job-tracker-detail-item" });
+				setIcon(item.createSpan({ cls: "job-tracker-detail-icon" }), "users");
+				item.createSpan({ text: ` ${iv.interviewers}` });
+			}
+			if (iv.outcomeNotes) {
+				const item = detailsRow.createSpan({ cls: "job-tracker-detail-item activity-note" });
+				setIcon(item.createSpan({ cls: "job-tracker-detail-icon" }), "message-square");
+				item.createSpan({ text: ` ${iv.outcomeNotes}` });
+			}
 
 			const actionsDiv = itemCard.createDiv({ cls: "job-tracker-list-actions" });
 
@@ -322,10 +361,12 @@ export class ManageApplicationModal extends Modal {
 				text: "Log Outcome",
 			});
 			debriefBtn.onclick = () => {
-				const modal = new LogInterviewOutcomeModal(this.app, this.plugin, this.application);
+				this.close();
+				const modal = new LogInterviewOutcomeModal(this.app, this.plugin, this.application, () => {
+					this.reopenWithFreshData("interviews");
+				});
 				modal.selectedInterviewId = iv.id;
 				modal.open();
-				this.close();
 			};
 
 			const deleteBtn = actionsDiv.createEl("button", {
@@ -341,25 +382,17 @@ export class ManageApplicationModal extends Modal {
 					"Remove Round",
 					async () => {
 						try {
-							const file = this.plugin.appService.resolveFile(this.application!.filePath);
+							const file = this.resolveApplicationFile();
 							if (file instanceof TFile) {
 								await this.plugin.appService.deleteInterview(file, iv.id);
-								this.renderModal();
-							} else {
-								new Notice("Application file could not be found. It may have been moved or deleted.");
+								this.renderContent();
 							}
 						} catch (err) {
-							console.error("Job Tracker: Modal action failed:", err);
-							new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+							this.handleModalError("Delete interview", err);
 						}
 					}
 				).open();
 			};
 		}
-	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
 	}
 }

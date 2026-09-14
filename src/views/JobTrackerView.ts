@@ -8,7 +8,8 @@ import {
 	normalizePath,
 } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
-import { JobApplication, JobStatus } from "../types";
+import { JobApplication, JobSortField, JobStatus } from "../types";
+import { sanitizeUrl } from "../services/ApplicationService";
 import { VIEW_TYPE_JOB_TRACKER } from "../constants";
 import { NewApplicationModal } from "../modals/NewApplicationModal";
 import { UpdateStatusModal } from "../modals/UpdateStatusModal";
@@ -51,10 +52,10 @@ export interface MetricsData {
 export class JobTrackerView extends ItemView {
 	plugin: JobApplicationTrackerPlugin;
 
-	currentMode: TrackerViewMode = "kanban";
-	searchQuery = "";
-	statusFilter = "All";
-	sortField: keyof JobApplication = "dateApplied";
+	private currentMode: TrackerViewMode = "kanban";
+	private searchQuery = "";
+	private statusFilter = "All";
+	sortField: JobSortField = "dateApplied";
 	sortAscending = false;
 	applications: JobApplication[] = [];
 
@@ -63,9 +64,19 @@ export class JobTrackerView extends ItemView {
 	private listRenderer: ListRenderer;
 	private metricsRenderer: MetricsRenderer;
 
-	/** Cache key for metrics computations to avoid re-calculating on tab switches */
-	private metricsCacheKey = "";
+	/** Incremental data version for metrics computation and caching */
+	private dataVersion = 0;
+	private metricsVersion = -1;
 	private metricsCache: MetricsData | null = null;
+
+	private headerEl: HTMLElement | null = null;
+	private contentAreaEl: HTMLElement | null = null;
+	private countBadgeEl: HTMLElement | null = null;
+	private modeButtons: { mode: TrackerViewMode; btn: HTMLButtonElement }[] = [];
+	private filterRowEl: HTMLElement | null = null;
+	private statusSelectEl: HTMLSelectElement | null = null;
+	private searchInputEl: HTMLInputElement | null = null;
+	private searchClearEl: HTMLElement | null = null;
 
 	private debouncedRefresh: () => void;
 	private debouncedSearch: () => void;
@@ -89,6 +100,8 @@ export class JobTrackerView extends ItemView {
 
 		this.debouncedSearch = debounce(
 			() => {
+				this.tableRenderer.resetPagination();
+				this.listRenderer.resetPagination();
 				this.renderContentOnly();
 			},
 			200,
@@ -159,50 +172,74 @@ export class JobTrackerView extends ItemView {
 		return cache?.frontmatter?.type === "job-application";
 	}
 
+	async onClose() {
+		this.contentEl.empty();
+		this.headerEl = null;
+		this.contentAreaEl = null;
+		this.countBadgeEl = null;
+		this.filterRowEl = null;
+		this.statusSelectEl = null;
+		this.searchInputEl = null;
+		this.searchClearEl = null;
+		this.modeButtons = [];
+		this.metricsCache = null;
+	}
+
 	loadAndRender() {
 		this.applications = this.plugin.appService.getAllApplications();
+		this.dataVersion++;
 		this.metricsCache = null;
-		this.metricsCacheKey = "";
+		this.tableRenderer.resetPagination();
+		this.listRenderer.resetPagination();
 		this.render();
 	}
 
 	render() {
 		const { contentEl } = this;
-		contentEl.empty();
-		contentEl.addClass("job-tracker-view");
-
-		this.renderHeader(contentEl);
-
-		const contentContainer = contentEl.createDiv({ cls: "job-tracker-content-area" });
-
-		const filteredApps = this.getFilteredAndSortedApps();
-
-		if (filteredApps.length === 0 && this.applications.length === 0) {
-			this.renderEmptyState(contentContainer);
-			return;
+		if (!this.headerEl || !this.contentAreaEl || !contentEl.contains(this.headerEl)) {
+			contentEl.empty();
+			contentEl.addClass("job-tracker-view");
+			this.headerEl = contentEl.createDiv({ cls: "job-tracker-header" });
+			this.contentAreaEl = contentEl.createDiv({ cls: "job-tracker-content-area" });
+			this.renderHeader(this.headerEl);
+		} else {
+			this.updateHeaderState();
 		}
 
-		if (this.currentMode === "kanban") {
-			this.kanbanRenderer.render(contentContainer, filteredApps);
-		} else if (this.currentMode === "table") {
-			this.tableRenderer.render(contentContainer, filteredApps);
-		} else if (this.currentMode === "list") {
-			this.listRenderer.render(contentContainer, filteredApps);
-		} else {
-			this.metricsRenderer.render(contentContainer);
+		this.renderContentOnly();
+	}
+
+	updateHeaderState() {
+		if (this.countBadgeEl) {
+			this.countBadgeEl.setText(`${this.applications.length} apps`);
+		}
+		for (const { mode, btn } of this.modeButtons) {
+			const isActive = this.currentMode === mode;
+			btn.classList.toggle("is-active", isActive);
+			btn.setAttribute("aria-selected", `${isActive}`);
+			btn.setAttribute("tabindex", isActive ? "0" : "-1");
+		}
+		if (this.filterRowEl) {
+			this.filterRowEl.toggleClass("job-tracker-is-hidden", this.currentMode === "metrics");
+		}
+		if (this.searchInputEl && this.searchInputEl.value !== this.searchQuery) {
+			this.searchInputEl.value = this.searchQuery;
+		}
+		if (this.searchClearEl) {
+			this.searchClearEl.toggleClass("job-tracker-is-hidden", !this.searchQuery);
 		}
 	}
 
 	renderHeader(container: HTMLElement) {
-		const header = container.createDiv({ cls: "job-tracker-header" });
+		this.modeButtons = [];
 
 		// Top row: Title + Actions
-		const topRow = header.createDiv({ cls: "job-tracker-header-top" });
+		const topRow = container.createDiv({ cls: "job-tracker-header-top" });
 		const titleContainer = topRow.createDiv({ cls: "job-tracker-title-container" });
 		const titleIcon = titleContainer.createSpan({ cls: "job-tracker-title-icon" });
 		setIcon(titleIcon, "briefcase");
 		titleContainer.createEl("h3", { text: "Job Tracker", cls: "job-tracker-title" });
-		titleContainer.createSpan({
+		this.countBadgeEl = titleContainer.createSpan({
 			text: `${this.applications.length} apps`,
 			cls: "job-tracker-count-badge",
 		});
@@ -234,9 +271,11 @@ export class JobTrackerView extends ItemView {
 				},
 			});
 			setIcon(btn, icon);
+			this.modeButtons.push({ mode, btn });
 			btn.onclick = () => {
 				this.currentMode = mode;
-				this.render();
+				this.updateHeaderState();
+				this.renderContentOnly();
 			};
 		}
 
@@ -258,63 +297,68 @@ export class JobTrackerView extends ItemView {
 		};
 
 		// Filter & Search bar row (only for non-metrics view)
-		if (this.currentMode !== "metrics") {
-			const filterRow = header.createDiv({ cls: "job-tracker-filter-row" });
+		this.filterRowEl = container.createDiv({ cls: "job-tracker-filter-row" });
+		this.filterRowEl.toggleClass("job-tracker-is-hidden", this.currentMode === "metrics");
 
-			// Search input
-			const searchWrapper = filterRow.createDiv({ cls: "job-tracker-search-wrapper" });
-			const searchIcon = searchWrapper.createSpan({ cls: "job-tracker-search-icon" });
-			setIcon(searchIcon, "search");
-			const searchInput = searchWrapper.createEl("input", {
-				type: "text",
-				placeholder: "Search company, role, location...",
-				cls: "job-tracker-search-input",
-				value: this.searchQuery,
-				attr: { "aria-label": "Search applications" },
-			});
-			searchInput.oninput = (e) => {
-				this.searchQuery = (e.target as HTMLInputElement).value;
-				this.debouncedSearch();
-			};
-
-			if (this.searchQuery) {
-				const clearBtn = searchWrapper.createSpan({
-					cls: "job-tracker-search-clear",
-					attr: { "aria-label": "Clear search", role: "button", tabindex: "0" },
-				});
-				setIcon(clearBtn, "x");
-				clearBtn.onclick = () => {
-					this.searchQuery = "";
-					this.render();
-				};
-				clearBtn.onkeydown = (e) => {
-					if (e.key === "Enter" || e.key === " ") {
-						e.preventDefault();
-						this.searchQuery = "";
-						this.render();
-					}
-				};
+		// Search input
+		const searchWrapper = this.filterRowEl.createDiv({ cls: "job-tracker-search-wrapper" });
+		const searchIcon = searchWrapper.createSpan({ cls: "job-tracker-search-icon" });
+		setIcon(searchIcon, "search");
+		this.searchInputEl = searchWrapper.createEl("input", {
+			type: "text",
+			placeholder: "Search company, role, location...",
+			cls: "job-tracker-search-input",
+			value: this.searchQuery,
+			attr: { "aria-label": "Search applications" },
+		});
+		this.searchInputEl.oninput = (e) => {
+			this.searchQuery = (e.target as HTMLInputElement).value;
+			if (this.searchClearEl) {
+				this.searchClearEl.toggleClass("job-tracker-is-hidden", !this.searchQuery);
 			}
+			this.debouncedSearch();
+		};
 
-			// Status filter dropdown
-			const statusSelect = filterRow.createEl("select", {
-				cls: "job-tracker-filter-select",
-				attr: { "aria-label": "Filter by status" },
-			});
-			statusSelect.createEl("option", { text: "All Statuses", value: "All" });
-			for (const st of this.plugin.settings.statuses) {
-				const opt = statusSelect.createEl("option", { text: st, value: st });
-				if (st === this.statusFilter) opt.selected = true;
-			}
-			statusSelect.onchange = (e) => {
-				this.statusFilter = (e.target as HTMLSelectElement).value;
+		this.searchClearEl = searchWrapper.createSpan({
+			cls: "job-tracker-search-clear",
+			attr: { "aria-label": "Clear search", role: "button", tabindex: "0" },
+		});
+		setIcon(this.searchClearEl, "x");
+		this.searchClearEl.toggleClass("job-tracker-is-hidden", !this.searchQuery);
+		this.searchClearEl.onclick = () => {
+			this.searchQuery = "";
+			if (this.searchInputEl) this.searchInputEl.value = "";
+			this.updateHeaderState();
+			this.renderContentOnly();
+		};
+		this.searchClearEl.onkeydown = (e) => {
+			if (e.key === "Enter" || e.key === " ") {
+				e.preventDefault();
+				this.searchQuery = "";
+				if (this.searchInputEl) this.searchInputEl.value = "";
+				this.updateHeaderState();
 				this.renderContentOnly();
-			};
+			}
+		};
+
+		// Status filter dropdown
+		this.statusSelectEl = this.filterRowEl.createEl("select", {
+			cls: "job-tracker-filter-select",
+			attr: { "aria-label": "Filter by status" },
+		});
+		this.statusSelectEl.createEl("option", { text: "All Statuses", value: "All" });
+		for (const st of this.plugin.settings.statuses) {
+			const opt = this.statusSelectEl.createEl("option", { text: st, value: st });
+			if (st === this.statusFilter) opt.selected = true;
 		}
+		this.statusSelectEl.onchange = (e) => {
+			this.statusFilter = (e.target as HTMLSelectElement).value;
+			this.renderContentOnly();
+		};
 	}
 
 	renderContentOnly() {
-		const contentArea = this.contentEl.querySelector(".job-tracker-content-area");
+		const contentArea = this.contentAreaEl ?? this.contentEl.querySelector<HTMLElement>(".job-tracker-content-area");
 		if (contentArea instanceof HTMLElement) {
 			contentArea.empty();
 			const filteredApps = this.getFilteredAndSortedApps();
@@ -366,11 +410,10 @@ export class JobTrackerView extends ItemView {
 
 		// Sorting
 		result.sort((a, b) => {
-			let valA = a[this.sortField] || "";
-			let valB = b[this.sortField] || "";
-
-			if (typeof valA === "string") valA = valA.toLowerCase();
-			if (typeof valB === "string") valB = valB.toLowerCase();
+			const rawA = a[this.sortField];
+			const rawB = b[this.sortField];
+			const valA = typeof rawA === "string" ? rawA.toLowerCase() : "";
+			const valB = typeof rawB === "string" ? rawB.toLowerCase() : "";
 
 			if (valA < valB) return this.sortAscending ? -1 : 1;
 			if (valA > valB) return this.sortAscending ? 1 : -1;
@@ -496,8 +539,7 @@ export class JobTrackerView extends ItemView {
 	 * Computes and caches metrics data. Only recomputes when applications data has changed.
 	 */
 	getOrComputeMetrics(): MetricsData {
-		const cacheKey = `${this.applications.length}:${this.applications.map((a) => `${a.filePath}:${a.lastUpdated || a.status}`).join(",")}`;
-		if (this.metricsCache && this.metricsCacheKey === cacheKey) {
+		if (this.metricsCache && this.metricsVersion === this.dataVersion) {
 			return this.metricsCache;
 		}
 
@@ -599,7 +641,7 @@ export class JobTrackerView extends ItemView {
 			sourceMap,
 			allHistoryEntries,
 		};
-		this.metricsCacheKey = cacheKey;
+		this.metricsVersion = this.dataVersion;
 		return this.metricsCache;
 	}
 
@@ -659,12 +701,15 @@ export class JobTrackerView extends ItemView {
 		}
 
 		if (app.jobUrl) {
-			menu.addItem((item) =>
-				item
-					.setTitle("Open Job Posting URL")
-					.setIcon("external-link")
-					.onClick(() => window.open(app.jobUrl, "_blank"))
-			);
+			const safeUrl = sanitizeUrl(app.jobUrl);
+			if (safeUrl) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Open Job Posting URL")
+						.setIcon("external-link")
+						.onClick(() => window.open(safeUrl, "_blank"))
+				);
+			}
 		}
 
 		menu.addSeparator();

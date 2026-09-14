@@ -14,7 +14,7 @@ import { ConfirmDeleteModal } from "./modals/ConfirmDeleteModal";
 import { JobTrackerView } from "./views/JobTrackerView";
 
 export default class JobApplicationTrackerPlugin extends Plugin {
-	declare settings: JobApplicationTrackerSettings;
+	settings: JobApplicationTrackerSettings = Object.assign({}, DEFAULT_SETTINGS);
 	appService!: ApplicationService;
 
 	async onload() {
@@ -159,6 +159,12 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 
 		// Settings tab
 		this.addSettingTab(new JobApplicationTrackerSettingTab(this.app, this));
+
+		// Invalidate application cache on vault and metadata changes
+		this.registerEvent(this.app.metadataCache.on("changed", () => this.appService.invalidateCache()));
+		this.registerEvent(this.app.vault.on("create", () => this.appService.invalidateCache()));
+		this.registerEvent(this.app.vault.on("delete", () => this.appService.invalidateCache()));
+		this.registerEvent(this.app.vault.on("rename", () => this.appService.invalidateCache()));
 	}
 
 	async activateView(location?: "tab" | "right-sidebar" | "left-sidebar") {
@@ -180,6 +186,11 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 				leaf = workspace.getRightLeaf(false);
 			}
 
+			// If sidebar leaf creation returned null, fallback to a tab
+			if (!leaf) {
+				leaf = workspace.getLeaf("tab");
+			}
+
 			if (leaf) {
 				await leaf.setViewState({ type: VIEW_TYPE_JOB_TRACKER, active: true });
 			}
@@ -187,6 +198,8 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 
 		if (leaf) {
 			await workspace.revealLeaf(leaf);
+		} else {
+			new Notice("Could not open Job Tracker view in the current workspace.");
 		}
 	}
 
@@ -242,18 +255,18 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 	async loadSettings() {
 		const data = (await this.loadData()) as Partial<JobApplicationTrackerSettings> | null;
 		this.settings = {
-			trackerFolderPath: data?.trackerFolderPath || DEFAULT_SETTINGS.trackerFolderPath,
-			interviewNotesFolderPath: data?.interviewNotesFolderPath || DEFAULT_SETTINGS.interviewNotesFolderPath,
-			attachmentsFolderPath: data?.attachmentsFolderPath || DEFAULT_SETTINGS.attachmentsFolderPath,
+			trackerFolderPath: data?.trackerFolderPath ?? DEFAULT_SETTINGS.trackerFolderPath,
+			interviewNotesFolderPath: data?.interviewNotesFolderPath ?? DEFAULT_SETTINGS.interviewNotesFolderPath,
+			attachmentsFolderPath: data?.attachmentsFolderPath ?? DEFAULT_SETTINGS.attachmentsFolderPath,
 			statuses: Array.isArray(data?.statuses) && data.statuses.length > 0
 				? [...data.statuses]
 				: [...DEFAULT_SETTINGS.statuses],
-			defaultStatus: data?.defaultStatus || DEFAULT_SETTINGS.defaultStatus,
-			interviewPrepTemplate: data?.interviewPrepTemplate || DEFAULT_SETTINGS.interviewPrepTemplate,
+			defaultStatus: data?.defaultStatus ?? DEFAULT_SETTINGS.defaultStatus,
+			interviewPrepTemplate: data?.interviewPrepTemplate ?? DEFAULT_SETTINGS.interviewPrepTemplate,
 			defaultSourceOptions: Array.isArray(data?.defaultSourceOptions) && data.defaultSourceOptions.length > 0
 				? [...data.defaultSourceOptions]
 				: [...DEFAULT_SETTINGS.defaultSourceOptions],
-			openViewLocation: data?.openViewLocation || DEFAULT_SETTINGS.openViewLocation,
+			openViewLocation: data?.openViewLocation ?? DEFAULT_SETTINGS.openViewLocation,
 		};
 	}
 

@@ -1,6 +1,7 @@
-import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile } from "obsidian";
+import { App, ButtonComponent, FuzzySuggestModal, Setting } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
 import { JobApplication, JobStatus } from "../types";
+import { BaseApplicationModal } from "./BaseApplicationModal";
 
 /**
  * Fuzzy search modal allowing the user to select an active job application.
@@ -40,37 +41,16 @@ export class SelectApplicationModal extends FuzzySuggestModal<JobApplication> {
 /**
  * Quick status update modal for transitioning an application stage and logging notes to activity log.
  */
-export class UpdateStatusModal extends Modal {
-	plugin: JobApplicationTrackerPlugin;
-	application: JobApplication | null;
-	newStatus: JobStatus;
-	note = "";
+export class UpdateStatusModal extends BaseApplicationModal {
+	private newStatus: JobStatus;
+	private note = "";
 
 	constructor(app: App, plugin: JobApplicationTrackerPlugin, application: JobApplication | null = null) {
-		super(app);
-		this.plugin = plugin;
-		this.application = application;
+		super(app, plugin, application);
 		this.newStatus = application?.status || plugin.settings.defaultStatus || "Applied";
 	}
 
-	onOpen(): void {
-		const { contentEl } = this;
-		contentEl.empty();
-		contentEl.addClass("job-tracker-modal");
-
-		if (!this.application) {
-			// If no application passed in, let user select one first
-			new SelectApplicationModal(this.app, this.plugin, (selectedApp) => {
-				new UpdateStatusModal(this.app, this.plugin, selectedApp).open();
-			}).open();
-			this.close();
-			return;
-		}
-
-		this.renderModal();
-	}
-
-	renderModal() {
+	renderContent(): void {
 		const { contentEl } = this;
 		contentEl.empty();
 
@@ -91,7 +71,7 @@ export class UpdateStatusModal extends Modal {
 				}
 				dropdown.setValue(this.newStatus);
 				dropdown.onChange((value) => {
-					this.newStatus = value as JobStatus;
+					this.newStatus = value;
 				});
 			});
 
@@ -99,7 +79,8 @@ export class UpdateStatusModal extends Modal {
 			.setName("Status Note (Optional)")
 			.setDesc("Reason, recruiter feedback, rejection note, or stage details")
 			.addTextArea((text) => {
-				text.setPlaceholder("e.g. Completed recruiter phone screen. Advancing to round 1.").onChange(
+				text.inputEl.maxLength = 2000;
+				text.setPlaceholder("e.g. Completed recruiter phone screen. Advancing to round 1.").setValue(this.note).onChange(
 					(value) => {
 						this.note = value;
 					}
@@ -107,15 +88,18 @@ export class UpdateStatusModal extends Modal {
 				text.inputEl.rows = 3;
 			});
 
+		let submitBtn: ButtonComponent;
 		new Setting(contentEl)
-			.addButton((btn) =>
+			.addButton((btn) => {
+				submitBtn = btn;
 				btn
 					.setButtonText("Update Status")
 					.setCta()
 					.onClick(async () => {
-						await this.handleSubmit();
-					})
-			)
+						submitBtn.setDisabled(true);
+						await this.handleSubmit(submitBtn);
+					});
+			})
 			.addButton((btn) =>
 				btn.setButtonText("Cancel").onClick(() => {
 					this.close();
@@ -123,25 +107,21 @@ export class UpdateStatusModal extends Modal {
 			);
 	}
 
-	async handleSubmit() {
+	private async handleSubmit(btn?: ButtonComponent): Promise<void> {
 		if (!this.application) return;
 
 		try {
-			const file = this.plugin.appService.resolveFile(this.application.filePath);
-			if (file instanceof TFile) {
-				await this.plugin.appService.updateStatus(file, this.newStatus, this.note.trim());
-				this.close();
-			} else {
-				new Notice("Application file could not be found. It may have been moved or deleted.");
+			const file = this.resolveApplicationFile();
+			if (!file) {
+				btn?.setDisabled(false);
+				return;
 			}
-		} catch (err) {
-			console.error("Job Tracker: Modal action failed:", err);
-			new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-		}
-	}
 
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
+			await this.plugin.appService.updateStatus(file, this.newStatus, this.note.trim());
+			this.close();
+		} catch (err) {
+			btn?.setDisabled(false);
+			this.handleModalError("Update status", err);
+		}
 	}
 }

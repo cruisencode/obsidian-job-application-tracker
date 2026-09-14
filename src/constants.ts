@@ -1,6 +1,16 @@
-import { JobApplicationTrackerSettings, JobStatus } from "./types";
+import { EmploymentType, JobApplicationTrackerSettings, JobStatus, WorkplaceType } from "./types";
 
 export const VIEW_TYPE_JOB_TRACKER = "job-application-tracker-view";
+
+/**
+ * Sanitizes a status string for safe usage in CSS class names.
+ */
+export function getStatusClassName(status: string): string {
+	return "status-" + (status || "").toLowerCase().trim().replace(/[^a-z0-9-]/g, "-");
+}
+
+export const WORKPLACE_OPTIONS: readonly WorkplaceType[] = ["Remote", "Hybrid", "On-site"];
+export const EMPLOYMENT_OPTIONS: readonly EmploymentType[] = ["Full-time", "Contract", "Part-time", "Internship"];
 
 export const DEFAULT_STATUSES: JobStatus[] = [
 	"Wishlist",
