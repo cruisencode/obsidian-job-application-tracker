@@ -1,6 +1,5 @@
 import { App, debounce, normalizePath, PluginSettingTab, Setting, SettingDefinitionItem, TextAreaComponent } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
-import { JobStatus } from "../types";
 import { DEFAULT_INTERVIEW_PREP_TEMPLATE, DEFAULT_SETTINGS } from "../constants";
 
 export class JobApplicationTrackerSettingTab extends PluginSettingTab {

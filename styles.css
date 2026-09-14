@@ -1164,6 +1164,8 @@
 	padding: 8px 10px;
 }
 
+.job-tracker-filter-row.job-tracker-is-hidden,
+.job-tracker-search-clear.job-tracker-is-hidden,
 .job-tracker-is-hidden {
-	display: none !important;
+	display: none;
 }
