@@ -85,7 +85,7 @@ export class AddInterviewModal extends BaseApplicationModal {
 		// Date
 		new Setting(contentEl)
 			.setName("Interview Date")
-			.setDesc("Date of the interview (YYYY-MM-DD)")
+			.setDesc("Scheduled date of the interview")
 			.addText((text) => {
 				text.inputEl.type = "date";
 				text.setValue(this.date).onChange((value) => {
@@ -163,7 +163,7 @@ export class AddInterviewModal extends BaseApplicationModal {
 			return;
 		}
 		if (this.date.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(this.date.trim())) {
-			new Notice("Interview Date must be in YYYY-MM-DD format.");
+			new Notice("Please select a valid date for Interview Date.");
 			btn?.setDisabled(false);
 			return;
 		}

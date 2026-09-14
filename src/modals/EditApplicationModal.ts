@@ -115,7 +115,7 @@ export class EditApplicationModal extends BaseApplicationModal {
 		// Date Applied
 		new Setting(contentEl)
 			.setName("Date Applied")
-			.setDesc("Date of application (YYYY-MM-DD)")
+			.setDesc("Date when the application was submitted")
 			.addText((text) => {
 				text.inputEl.type = "date";
 				text.setValue(this.dateApplied).onChange((value) => {
@@ -202,7 +202,7 @@ export class EditApplicationModal extends BaseApplicationModal {
 		// Follow-up Date
 		new Setting(contentEl)
 			.setName("Follow-up / Deadline Date")
-			.setDesc("Optional reminder date (YYYY-MM-DD)")
+			.setDesc("Optional reminder or deadline date")
 			.addText((text) => {
 				text.inputEl.type = "date";
 				text.setValue(this.followUpDate).onChange((value) => {
@@ -292,11 +292,11 @@ export class EditApplicationModal extends BaseApplicationModal {
 				return;
 			}
 			if (this.dateApplied.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(this.dateApplied.trim())) {
-				new Notice("Date Applied must be in YYYY-MM-DD format.");
+				new Notice("Please select a valid date for Date Applied.");
 				return;
 			}
 			if (this.followUpDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(this.followUpDate.trim())) {
-				new Notice("Follow-up Date must be in YYYY-MM-DD format.");
+				new Notice("Please select a valid date for Follow-up Date.");
 				return;
 			}
 			if (this.jobUrl.trim() && !sanitizeUrl(this.jobUrl.trim())) {
