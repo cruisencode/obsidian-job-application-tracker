@@ -164,12 +164,7 @@ export class JobTrackerView extends ItemView {
 	 * Checks if a file is within the tracked application folder or has job-application frontmatter.
 	 */
 	private isTrackedFile(file: TFile): boolean {
-		const appFolder = normalizePath(this.plugin.settings.trackerFolderPath);
-		if (file.path.startsWith(appFolder + "/") || file.path === appFolder) {
-			return true;
-		}
-		const cache = this.app.metadataCache.getFileCache(file);
-		return cache?.frontmatter?.type === "job-application";
+		return this.plugin.appService.isTrackedFile(file);
 	}
 
 	async onClose() {

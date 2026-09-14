@@ -1,4 +1,4 @@
-import { Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
+import { Notice, Plugin, TFile, WorkspaceLeaf, normalizePath } from "obsidian";
 import { JobApplicationTrackerSettings, JobApplication } from "./types";
 import { DEFAULT_SETTINGS, VIEW_TYPE_JOB_TRACKER } from "./constants";
 import { ApplicationService } from "./services/ApplicationService";
@@ -160,11 +160,39 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 		// Settings tab
 		this.addSettingTab(new JobApplicationTrackerSettingTab(this.app, this));
 
-		// Invalidate application cache on vault and metadata changes
-		this.registerEvent(this.app.metadataCache.on("changed", () => this.appService.invalidateCache()));
-		this.registerEvent(this.app.vault.on("create", () => this.appService.invalidateCache()));
-		this.registerEvent(this.app.vault.on("delete", () => this.appService.invalidateCache()));
-		this.registerEvent(this.app.vault.on("rename", () => this.appService.invalidateCache()));
+		// Invalidate application cache on tracked vault and metadata changes
+		this.registerEvent(
+			this.app.metadataCache.on("changed", (file) => {
+				if (file instanceof TFile && this.appService.isTrackedFile(file)) {
+					this.appService.invalidateCache();
+				}
+			})
+		);
+		this.registerEvent(
+			this.app.vault.on("create", (file) => {
+				if (file instanceof TFile && this.appService.isTrackedFile(file)) {
+					this.appService.invalidateCache();
+				}
+			})
+		);
+		this.registerEvent(
+			this.app.vault.on("delete", (file) => {
+				if (file instanceof TFile && this.appService.isTrackedFile(file)) {
+					this.appService.invalidateCache();
+				}
+			})
+		);
+		this.registerEvent(
+			this.app.vault.on("rename", (file, oldPath) => {
+				const appFolder = normalizePath(this.settings.trackerFolderPath);
+				if (
+					(file instanceof TFile && this.appService.isTrackedFile(file)) ||
+					oldPath.startsWith(appFolder + "/")
+				) {
+					this.appService.invalidateCache();
+				}
+			})
+		);
 	}
 
 	async activateView(location?: "tab" | "right-sidebar" | "left-sidebar") {
@@ -250,7 +278,9 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 		return leaves.some((leaf) => leaf.getRoot() === this.app.workspace.rootSplit);
 	}
 
-	onunload() {}
+	onunload() {
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_JOB_TRACKER);
+	}
 
 	async loadSettings() {
 		const data = (await this.loadData()) as Partial<JobApplicationTrackerSettings> | null;
@@ -272,5 +302,11 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+		this.appService?.invalidateCache();
+		for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_JOB_TRACKER)) {
+			if (leaf.view instanceof JobTrackerView) {
+				leaf.view.loadAndRender();
+			}
+		}
 	}
 }

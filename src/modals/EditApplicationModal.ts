@@ -281,35 +281,30 @@ export class EditApplicationModal extends BaseApplicationModal {
 	private async handleSubmit(btn?: ButtonComponent): Promise<void> {
 		if (!this.application) return;
 
-		if (!this.company.trim()) {
-			new Notice("Please enter a company name.");
-			this.companyInputEl?.focus();
-			btn?.setDisabled(false);
-			return;
-		}
-		if (!this.role.trim()) {
-			new Notice("Please enter a role / job title.");
-			this.roleInputEl?.focus();
-			btn?.setDisabled(false);
-			return;
-		}
-		if (this.dateApplied.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(this.dateApplied.trim())) {
-			new Notice("Date Applied must be in YYYY-MM-DD format.");
-			btn?.setDisabled(false);
-			return;
-		}
-		if (this.followUpDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(this.followUpDate.trim())) {
-			new Notice("Follow-up Date must be in YYYY-MM-DD format.");
-			btn?.setDisabled(false);
-			return;
-		}
-		if (this.jobUrl.trim() && !sanitizeUrl(this.jobUrl.trim())) {
-			new Notice("Job URL must begin with http:// or https://");
-			btn?.setDisabled(false);
-			return;
-		}
-
 		try {
+			if (!this.company.trim()) {
+				new Notice("Please enter a company name.");
+				this.companyInputEl?.focus();
+				return;
+			}
+			if (!this.role.trim()) {
+				new Notice("Please enter a role / job title.");
+				this.roleInputEl?.focus();
+				return;
+			}
+			if (this.dateApplied.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(this.dateApplied.trim())) {
+				new Notice("Date Applied must be in YYYY-MM-DD format.");
+				return;
+			}
+			if (this.followUpDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(this.followUpDate.trim())) {
+				new Notice("Follow-up Date must be in YYYY-MM-DD format.");
+				return;
+			}
+			if (this.jobUrl.trim() && !sanitizeUrl(this.jobUrl.trim())) {
+				new Notice("Job URL must begin with http:// or https://");
+				return;
+			}
+
 			let finalAttachmentPath = this.jobDescriptionFile;
 			if (this.uploadedFile) {
 				const saved = await this.plugin.appService.saveAttachment(
@@ -321,7 +316,6 @@ export class EditApplicationModal extends BaseApplicationModal {
 
 			const file = this.resolveApplicationFile();
 			if (!file) {
-				btn?.setDisabled(false);
 				return;
 			}
 
@@ -344,13 +338,24 @@ export class EditApplicationModal extends BaseApplicationModal {
 				this.newJobDescriptionText ? this.newJobDescriptionText.trim() : undefined
 			);
 
+			// Rename file if company or role changed and target name is available
+			const newBaseName = this.plugin.appService.sanitizeFileName(`${this.company.trim()} - ${this.role.trim()}`);
+			if (newBaseName && file.basename !== newBaseName) {
+				const parentDir = file.parent ? file.parent.path : "";
+				const newPath = parentDir && parentDir !== "/" ? `${parentDir}/${newBaseName}.md` : `${newBaseName}.md`;
+				if (this.app.vault.getAbstractFileByPath(newPath) == null) {
+					await this.app.fileManager.renameFile(file, newPath);
+				}
+			}
+
 			this.close();
 			if (this.onComplete) {
 				this.onComplete();
 			}
 		} catch (err) {
-			btn?.setDisabled(false);
 			this.handleModalError("Save application", err);
+		} finally {
+			btn?.setDisabled(false);
 		}
 	}
 }

@@ -1,6 +1,6 @@
 import { App, debounce, normalizePath, PluginSettingTab, Setting, SettingDefinitionItem, TextAreaComponent } from "obsidian";
 import JobApplicationTrackerPlugin from "../main";
-import { DEFAULT_INTERVIEW_PREP_TEMPLATE, DEFAULT_SETTINGS } from "../constants";
+import { DEFAULT_INTERVIEW_PREP_TEMPLATE, DEFAULT_SETTINGS, DEFAULT_STATUSES } from "../constants";
 
 export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 	plugin: JobApplicationTrackerPlugin;
@@ -122,6 +122,46 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 									await this.plugin.saveSettings();
 								});
 							});
+						},
+					},
+					{
+						name: "Pipeline Stages / Statuses",
+						desc: "Comma-separated list of application stages used in Kanban columns, badges, and filters.",
+						render: (setting: Setting) => {
+							let stagesTextArea: TextAreaComponent | null = null;
+							setting
+								.addTextArea((text) => {
+									stagesTextArea = text;
+									text
+										.setValue(this.plugin.settings.statuses.join(", "))
+										.onChange((value) => {
+											const cleanStatuses = value
+												.split(",")
+												.map((s) => s.trim().replace(/[\\#^[\]]/g, ""))
+												.filter((s) => s.length > 0);
+											if (cleanStatuses.length > 0) {
+												this.plugin.settings.statuses = cleanStatuses;
+												if (!cleanStatuses.includes(this.plugin.settings.defaultStatus)) {
+													this.plugin.settings.defaultStatus = cleanStatuses[0];
+												}
+												this.debouncedSave();
+											}
+										});
+									text.inputEl.rows = 2;
+								})
+								.addExtraButton((btn) => {
+									btn.setIcon("reset")
+										.setTooltip("Reset to default pipeline stages")
+										.onClick(async () => {
+											this.plugin.settings.statuses = [...DEFAULT_STATUSES];
+											this.plugin.settings.defaultStatus = "Applied";
+											await this.plugin.saveSettings();
+											if (stagesTextArea) {
+												stagesTextArea.setValue(DEFAULT_STATUSES.join(", "));
+											}
+											this.display();
+										});
+								});
 						},
 					},
 					{
