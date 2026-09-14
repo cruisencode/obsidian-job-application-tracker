@@ -154,12 +154,12 @@ export class ListRenderer {
 			const paginationDiv = container.createDiv({ cls: "job-tracker-pagination-bar" });
 			paginationDiv.createSpan({
 				text: `Showing ${displayedApps.length} of ${apps.length} applications`,
-				cls: "text-muted",
+				cls: "job-tracker-pagination-info text-muted",
 			});
 			const remaining = apps.length - this.displayedLimit;
 			const loadMoreBtn = paginationDiv.createEl("button", {
 				text: `Load More (${Math.min(50, remaining)} more)`,
-				cls: "mod-cta",
+				cls: "job-tracker-load-more-btn mod-cta",
 			});
 			loadMoreBtn.onclick = () => {
 				this.displayedLimit += 50;

@@ -772,13 +772,13 @@ export class JobTrackerView extends ItemView {
 				})
 		);
 
-		if (e instanceof MouseEvent) {
+		if (e instanceof MouseEvent && (e.clientX !== 0 || e.clientY !== 0)) {
 			menu.showAtMouseEvent(e);
 		} else {
-			const target = e.target as HTMLElement;
+			const target = (e.target as HTMLElement) || (e.currentTarget as HTMLElement);
 			const rect = target?.getBoundingClientRect?.();
 			if (rect) {
-				menu.showAtPosition({ x: rect.left, y: rect.bottom });
+				menu.showAtPosition({ x: Math.round(rect.left), y: Math.round(rect.bottom + 4) });
 			}
 		}
 	}
