@@ -12,6 +12,7 @@ const KANBAN_DRAG_MIME = "application/x-job-tracker-filepath";
 
 export class KanbanRenderer {
 	view: JobTrackerView;
+	focusedCardPath: string | null = null;
 
 	constructor(view: JobTrackerView) {
 		this.view = view;
@@ -55,6 +56,10 @@ export class KanbanRenderer {
 				column.removeClass("drag-over");
 				const filePath = e.dataTransfer?.getData(KANBAN_DRAG_MIME);
 				if (filePath) {
+					const app = this.view.applications.find((a) => a.filePath === filePath);
+					if (app && app.status === status) {
+						return;
+					}
 					const file = this.view.plugin.appService.resolveFile(filePath);
 					if (file instanceof TFile) {
 						await this.view.plugin.appService.updateStatus(file, status);
@@ -90,6 +95,14 @@ export class KanbanRenderer {
 				}
 			}
 		}
+
+		if (this.focusedCardPath) {
+			const targetCard = board.querySelector<HTMLElement>(`[data-file-path="${CSS.escape(this.focusedCardPath)}"]`);
+			if (targetCard) {
+				targetCard.focus();
+			}
+			this.focusedCardPath = null;
+		}
 	}
 
 	renderCard(container: HTMLElement, app: JobApplication) {
@@ -99,6 +112,7 @@ export class KanbanRenderer {
 				draggable: "true",
 				role: "article",
 				tabindex: "0",
+				"data-file-path": app.filePath,
 				"aria-label": `${app.company} - ${app.role} (${app.status}). Press Alt+Right or Alt+Left arrow to change stage.`,
 			},
 		});
@@ -115,6 +129,7 @@ export class KanbanRenderer {
 					const nextStatus = statuses[targetIndex];
 					const file = this.view.plugin.appService.resolveFile(app.filePath);
 					if (file instanceof TFile) {
+						this.focusedCardPath = app.filePath;
 						await this.view.plugin.appService.updateStatus(file, nextStatus);
 					}
 				}

@@ -9,15 +9,22 @@ import { JobApplication } from "../types";
 export abstract class BaseApplicationModal extends Modal {
 	protected plugin: JobApplicationTrackerPlugin;
 	application: JobApplication | null;
+	protected isCompleted = false;
+	protected onComplete?: () => void;
+	protected onCancel?: () => void;
 
 	constructor(
 		app: App,
 		plugin: JobApplicationTrackerPlugin,
-		application: JobApplication | null = null
+		application: JobApplication | null = null,
+		onComplete?: () => void,
+		onCancel?: () => void
 	) {
 		super(app);
 		this.plugin = plugin;
 		this.application = application;
+		this.onComplete = onComplete;
+		this.onCancel = onCancel;
 	}
 
 	async onOpen(): Promise<void> {
@@ -41,6 +48,9 @@ export abstract class BaseApplicationModal extends Modal {
 	onClose(): void {
 		const { contentEl } = this;
 		contentEl.empty();
+		if (!this.isCompleted && this.onCancel) {
+			this.onCancel();
+		}
 	}
 
 	/**

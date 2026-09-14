@@ -9,8 +9,6 @@ import { BaseApplicationModal } from "./BaseApplicationModal";
  * Comprehensive modal dialog to edit an existing job application.
  */
 export class EditApplicationModal extends BaseApplicationModal {
-	private onComplete?: () => void;
-
 	private company = "";
 	private role = "";
 	private status: JobStatus = "Applied";
@@ -33,10 +31,10 @@ export class EditApplicationModal extends BaseApplicationModal {
 		app: App,
 		plugin: JobApplicationTrackerPlugin,
 		application: JobApplication | null = null,
-		onComplete?: () => void
+		onComplete?: () => void,
+		onCancel?: () => void
 	) {
-		super(app, plugin, application);
-		this.onComplete = onComplete;
+		super(app, plugin, application, onComplete, onCancel);
 
 		if (application) {
 			this.syncFieldsFromApplication(application);
@@ -117,8 +115,9 @@ export class EditApplicationModal extends BaseApplicationModal {
 		// Date Applied
 		new Setting(contentEl)
 			.setName("Date Applied")
+			.setDesc("Date of application (YYYY-MM-DD)")
 			.addText((text) => {
-				text.inputEl.maxLength = 20;
+				text.inputEl.type = "date";
 				text.setValue(this.dateApplied).onChange((value) => {
 					this.dateApplied = value;
 				});
@@ -205,7 +204,7 @@ export class EditApplicationModal extends BaseApplicationModal {
 			.setName("Follow-up / Deadline Date")
 			.setDesc("Optional reminder date (YYYY-MM-DD)")
 			.addText((text) => {
-				text.inputEl.maxLength = 20;
+				text.inputEl.type = "date";
 				text.setValue(this.followUpDate).onChange((value) => {
 					this.followUpDate = value;
 				});
@@ -348,6 +347,7 @@ export class EditApplicationModal extends BaseApplicationModal {
 				}
 			}
 
+			this.isCompleted = true;
 			this.close();
 			if (this.onComplete) {
 				this.onComplete();

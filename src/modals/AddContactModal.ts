@@ -8,7 +8,6 @@ import { BaseApplicationModal } from "./BaseApplicationModal";
  * Modal dialog to add a key contact (recruiter, hiring manager, etc.) to a job application.
  */
 export class AddContactModal extends BaseApplicationModal {
-	private onComplete?: () => void;
 	private name = "";
 	private role = "Recruiter";
 	private customRole = "";
@@ -21,10 +20,10 @@ export class AddContactModal extends BaseApplicationModal {
 		app: App,
 		plugin: JobApplicationTrackerPlugin,
 		application: JobApplication | null = null,
-		onComplete?: () => void
+		onComplete?: () => void,
+		onCancel?: () => void
 	) {
-		super(app, plugin, application);
-		this.onComplete = onComplete;
+		super(app, plugin, application, onComplete, onCancel);
 	}
 
 	renderContent(): void {
@@ -195,6 +194,7 @@ export class AddContactModal extends BaseApplicationModal {
 			}
 
 			await this.plugin.appService.addContactToApplication(file, contact);
+			this.isCompleted = true;
 			this.close();
 			if (this.onComplete) {
 				this.onComplete();

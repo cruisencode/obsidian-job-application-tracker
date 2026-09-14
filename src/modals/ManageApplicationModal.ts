@@ -120,9 +120,13 @@ export class ManageApplicationModal extends BaseApplicationModal {
 			.addButton((btn) =>
 				btn.setButtonText("Edit Details").onClick(() => {
 					this.close();
-					new EditApplicationModal(this.app, this.plugin, this.application, () => {
-						this.reopenWithFreshData("overview");
-					}).open();
+					new EditApplicationModal(
+						this.app,
+						this.plugin,
+						this.application,
+						() => this.reopenWithFreshData("overview"),
+						() => this.reopenWithFreshData("overview")
+					).open();
 				})
 			);
 
@@ -134,9 +138,7 @@ export class ManageApplicationModal extends BaseApplicationModal {
 					this.close();
 					const file = this.resolveApplicationFile();
 					if (file instanceof TFile) {
-						const leaf = this.plugin.isTrackerViewOpenInMain()
-							? this.app.workspace.getLeaf("tab")
-							: this.app.workspace.getLeaf(false);
+						const leaf = this.app.workspace.getLeaf("tab");
 						await leaf.openFile(file);
 					}
 				})
@@ -150,9 +152,7 @@ export class ManageApplicationModal extends BaseApplicationModal {
 					btn.setButtonText("Open Attachment").onClick(async () => {
 						const file = this.plugin.appService.resolveFile(this.application!.jobDescriptionFile!);
 						if (file instanceof TFile) {
-							const leaf = this.plugin.isTrackerViewOpenInMain()
-								? this.app.workspace.getLeaf("tab")
-								: this.app.workspace.getLeaf(false);
+							const leaf = this.app.workspace.getLeaf("tab");
 							await leaf.openFile(file);
 						} else {
 							new Notice("Attachment file could not be found.");
@@ -202,9 +202,13 @@ export class ManageApplicationModal extends BaseApplicationModal {
 					.setCta()
 					.onClick(() => {
 						this.close();
-						new AddContactModal(this.app, this.plugin, this.application, () => {
-							this.reopenWithFreshData("contacts");
-						}).open();
+						new AddContactModal(
+							this.app,
+							this.plugin,
+							this.application,
+							() => this.reopenWithFreshData("contacts"),
+							() => this.reopenWithFreshData("contacts")
+						).open();
 					})
 			);
 
@@ -291,9 +295,13 @@ export class ManageApplicationModal extends BaseApplicationModal {
 					.setCta()
 					.onClick(() => {
 						this.close();
-						new AddInterviewModal(this.app, this.plugin, this.application, () => {
-							this.reopenWithFreshData("interviews");
-						}).open();
+						new AddInterviewModal(
+							this.app,
+							this.plugin,
+							this.application,
+							() => this.reopenWithFreshData("interviews"),
+							() => this.reopenWithFreshData("interviews")
+						).open();
 					})
 			);
 
@@ -348,9 +356,7 @@ export class ManageApplicationModal extends BaseApplicationModal {
 					this.close();
 					const prepFile = this.plugin.appService.resolveFile(iv.prepNotePath!);
 					if (prepFile instanceof TFile) {
-						const leaf = this.plugin.isTrackerViewOpenInMain()
-							? this.app.workspace.getLeaf("tab")
-							: this.app.workspace.getLeaf(false);
+						const leaf = this.app.workspace.getLeaf("tab");
 						await leaf.openFile(prepFile);
 					}
 				};
@@ -362,9 +368,13 @@ export class ManageApplicationModal extends BaseApplicationModal {
 			});
 			debriefBtn.onclick = () => {
 				this.close();
-				const modal = new LogInterviewOutcomeModal(this.app, this.plugin, this.application, () => {
-					this.reopenWithFreshData("interviews");
-				});
+				const modal = new LogInterviewOutcomeModal(
+					this.app,
+					this.plugin,
+					this.application,
+					() => this.reopenWithFreshData("interviews"),
+					() => this.reopenWithFreshData("interviews")
+				);
 				modal.selectedInterviewId = iv.id;
 				modal.open();
 			};

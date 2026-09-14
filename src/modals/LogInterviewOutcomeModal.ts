@@ -7,7 +7,6 @@ import { BaseApplicationModal } from "./BaseApplicationModal";
  * Modal dialog to log interview round debrief notes, record completion outcome, and advance pipeline stage.
  */
 export class LogInterviewOutcomeModal extends BaseApplicationModal {
-	private onComplete?: () => void;
 	selectedInterviewId = "";
 	private status: "Completed" | "Cancelled" = "Completed";
 	private outcomeNotes = "";
@@ -17,10 +16,10 @@ export class LogInterviewOutcomeModal extends BaseApplicationModal {
 		app: App,
 		plugin: JobApplicationTrackerPlugin,
 		application: JobApplication | null = null,
-		onComplete?: () => void
+		onComplete?: () => void,
+		onCancel?: () => void
 	) {
-		super(app, plugin, application);
-		this.onComplete = onComplete;
+		super(app, plugin, application, onComplete, onCancel);
 	}
 
 	renderContent(): void {
@@ -158,6 +157,7 @@ export class LogInterviewOutcomeModal extends BaseApplicationModal {
 				this.outcomeNotes.trim() || undefined,
 				this.nextStage || undefined
 			);
+			this.isCompleted = true;
 			this.close();
 			if (this.onComplete) {
 				this.onComplete();

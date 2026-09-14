@@ -86,7 +86,7 @@ export class NewApplicationModal extends Modal {
 			.setName("Date Applied")
 			.setDesc("Date of application (YYYY-MM-DD)")
 			.addText((text) => {
-				text.inputEl.maxLength = 20;
+				text.inputEl.type = "date";
 				text.setValue(this.dateApplied).onChange((value) => {
 					this.dateApplied = value;
 				});
@@ -173,8 +173,8 @@ export class NewApplicationModal extends Modal {
 			.setName("Follow-up Date")
 			.setDesc("Optional reminder date (YYYY-MM-DD)")
 			.addText((text) => {
-				text.inputEl.maxLength = 20;
-				text.setPlaceholder("YYYY-MM-DD").onChange((value) => {
+				text.inputEl.type = "date";
+				text.setValue(this.followUpDate).onChange((value) => {
 					this.followUpDate = value;
 				});
 			});
@@ -344,11 +344,9 @@ export class NewApplicationModal extends Modal {
 
 			this.close();
 
-			// Open the newly created note in active workspace only if the main tracker page is not open in the main page section
-			if (!this.plugin.isTrackerViewOpenInMain()) {
-				const leaf = this.app.workspace.getLeaf(false);
-				await leaf.openFile(file);
-			}
+			// Open the newly created note in a workspace tab
+			const leaf = this.app.workspace.getLeaf("tab");
+			await leaf.openFile(file);
 		} catch (err) {
 			console.error("Job Tracker: Modal action failed:", err);
 			new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
