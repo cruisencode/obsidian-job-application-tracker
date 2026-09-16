@@ -164,12 +164,7 @@ export class JobTrackerView extends ItemView {
 	 * Checks if a file is within the tracked application folder or has job-application frontmatter.
 	 */
 	private isTrackedFile(file: TFile): boolean {
-		const appFolder = normalizePath(this.plugin.settings.trackerFolderPath);
-		if (file.path.startsWith(appFolder + "/") || file.path === appFolder) {
-			return true;
-		}
-		const cache = this.app.metadataCache.getFileCache(file);
-		return cache?.frontmatter?.type === "job-application";
+		return this.plugin.appService.isTrackedFile(file);
 	}
 
 	async onClose() {
@@ -410,6 +405,29 @@ export class JobTrackerView extends ItemView {
 
 		// Sorting
 		result.sort((a, b) => {
+			if (this.sortField === "status") {
+				const statuses = this.plugin.settings.statuses;
+				const idxA = statuses.indexOf(a.status);
+				const idxB = statuses.indexOf(b.status);
+				const orderA = idxA !== -1 ? idxA : statuses.length;
+				const orderB = idxB !== -1 ? idxB : statuses.length;
+				if (orderA !== orderB) {
+					return this.sortAscending ? orderA - orderB : orderB - orderA;
+				}
+			} else if (this.sortField === "salary") {
+				const numA = this.parseSalary(a.salary);
+				const numB = this.parseSalary(b.salary);
+				if (numA !== null && numB !== null) {
+					if (numA !== numB) {
+						return this.sortAscending ? numA - numB : numB - numA;
+					}
+				} else if (numA !== null) {
+					return this.sortAscending ? -1 : 1;
+				} else if (numB !== null) {
+					return this.sortAscending ? 1 : -1;
+				}
+			}
+
 			const rawA = a[this.sortField];
 			const rawB = b[this.sortField];
 			const valA = typeof rawA === "string" ? rawA.toLowerCase() : "";
@@ -421,6 +439,25 @@ export class JobTrackerView extends ItemView {
 		});
 
 		return result;
+	}
+
+	/**
+	 * Parses a salary string (e.g. "$150,000", "$120k - $140k", "85k", "60/hr") into a numeric value for sorting.
+	 */
+	private parseSalary(salary?: string): number | null {
+		if (!salary) return null;
+		const cleaned = salary.trim().toLowerCase();
+		if (!cleaned) return null;
+		const match = cleaned.match(/([\d,]+(?:\.\d+)?)\s*([km])?/i);
+		if (!match) return null;
+		const numStr = match[1].replace(/,/g, "");
+		let val = parseFloat(numStr);
+		if (isNaN(val)) return null;
+		if (match[2]) {
+			if (match[2].toLowerCase() === "k") val *= 1000;
+			if (match[2].toLowerCase() === "m") val *= 1000000;
+		}
+		return val;
 	}
 
 	renderEmptyState(container: HTMLElement) {
@@ -735,13 +772,13 @@ export class JobTrackerView extends ItemView {
 				})
 		);
 
-		if (e instanceof MouseEvent) {
+		if (e instanceof MouseEvent && (e.clientX !== 0 || e.clientY !== 0)) {
 			menu.showAtMouseEvent(e);
 		} else {
-			const target = e.target as HTMLElement;
+			const target = (e.target as HTMLElement) || (e.currentTarget as HTMLElement);
 			const rect = target?.getBoundingClientRect?.();
 			if (rect) {
-				menu.showAtPosition({ x: rect.left, y: rect.bottom });
+				menu.showAtPosition({ x: Math.round(rect.left), y: Math.round(rect.bottom + 4) });
 			}
 		}
 	}

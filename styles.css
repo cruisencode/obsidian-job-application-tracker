@@ -35,6 +35,12 @@
 	--job-status-ghosted-border: color-mix(in srgb, var(--job-status-ghosted) 30%, transparent);
 }
 
+.theme-light .job-tracker-view,
+.theme-light .job-tracker-modal {
+	--job-status-offer: #b45309;
+	--job-status-accepted: #15803d;
+}
+
 .job-tracker-view {
 	container-type: inline-size;
 	display: flex;
@@ -247,11 +253,12 @@
 	cursor: pointer;
 	text-transform: capitalize;
 	white-space: nowrap;
-	border: 1px solid transparent;
+	border: 1px solid color-mix(in srgb, var(--text-muted) 25%, transparent);
+	background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
+	color: var(--text-muted);
 }
 
 .job-tracker-status-badge.status-wishlist,
-.job-tracker-status-badge.job-tracker-status-wishlist,
 .job-tracker-view .status-wishlist {
 	background-color: var(--job-status-wishlist-bg);
 	color: var(--job-status-wishlist);
@@ -259,7 +266,6 @@
 }
 
 .job-tracker-status-badge.status-applied,
-.job-tracker-status-badge.job-tracker-status-applied,
 .job-tracker-view .status-applied {
 	background-color: var(--job-status-applied-bg);
 	color: var(--job-status-applied);
@@ -267,7 +273,6 @@
 }
 
 .job-tracker-status-badge.status-screening,
-.job-tracker-status-badge.job-tracker-status-screening,
 .job-tracker-view .status-screening {
 	background-color: var(--job-status-screening-bg);
 	color: var(--job-status-screening);
@@ -275,7 +280,6 @@
 }
 
 .job-tracker-status-badge.status-interviewing,
-.job-tracker-status-badge.job-tracker-status-interviewing,
 .job-tracker-view .status-interviewing {
 	background-color: var(--job-status-interviewing-bg);
 	color: var(--job-status-interviewing);
@@ -283,7 +287,6 @@
 }
 
 .job-tracker-status-badge.status-offer,
-.job-tracker-status-badge.job-tracker-status-offer,
 .job-tracker-view .status-offer {
 	background-color: var(--job-status-offer-bg);
 	color: var(--job-status-offer);
@@ -291,7 +294,6 @@
 }
 
 .job-tracker-status-badge.status-accepted,
-.job-tracker-status-badge.job-tracker-status-accepted,
 .job-tracker-view .status-accepted {
 	background-color: var(--job-status-accepted-bg);
 	color: var(--job-status-accepted);
@@ -300,7 +302,6 @@
 }
 
 .job-tracker-status-badge.status-rejected,
-.job-tracker-status-badge.job-tracker-status-rejected,
 .job-tracker-view .status-rejected {
 	background-color: var(--job-status-rejected-bg);
 	color: var(--job-status-rejected);
@@ -308,7 +309,6 @@
 }
 
 .job-tracker-status-badge.status-withdrawn,
-.job-tracker-status-badge.job-tracker-status-withdrawn,
 .job-tracker-view .status-withdrawn {
 	background-color: var(--job-status-withdrawn-bg);
 	color: var(--job-status-withdrawn);
@@ -316,7 +316,6 @@
 }
 
 .job-tracker-status-badge.status-ghosted,
-.job-tracker-status-badge.job-tracker-status-ghosted,
 .job-tracker-view .status-ghosted {
 	background-color: var(--job-status-ghosted-bg);
 	color: var(--job-status-ghosted);
@@ -540,16 +539,6 @@
 	font-size: 0.85em;
 	color: var(--text-normal);
 	cursor: pointer;
-}
-
-.job-tracker-attached-info {
-	background-color: var(--background-secondary);
-	border-left: 3px solid var(--interactive-accent);
-	padding: 8px 12px;
-	margin-bottom: 12px;
-	border-radius: 4px;
-	font-size: 0.85em;
-	color: var(--text-normal);
 }
 
 .job-tracker-card-meta {
@@ -901,8 +890,8 @@
 }
 
 .job-tracker-native-sankey-svg {
+	min-width: 720px;
 	width: 100%;
-	max-width: 100%;
 	height: auto;
 	display: block;
 	margin: 0 auto;
@@ -1033,6 +1022,7 @@
 	border-radius: 50%;
 	margin-top: 5px;
 	flex-shrink: 0;
+	background-color: var(--text-muted);
 }
 
 .job-tracker-activity-dot.status-wishlist { background-color: var(--job-status-wishlist); }
@@ -1040,6 +1030,7 @@
 .job-tracker-activity-dot.status-screening { background-color: var(--job-status-screening); }
 .job-tracker-activity-dot.status-interviewing { background-color: var(--job-status-interviewing); }
 .job-tracker-activity-dot.status-offer { background-color: var(--job-status-offer); }
+.job-tracker-activity-dot.status-accepted { background-color: var(--job-status-accepted); }
 .job-tracker-activity-dot.status-rejected { background-color: var(--job-status-rejected); }
 .job-tracker-activity-dot.status-withdrawn { background-color: var(--job-status-withdrawn); }
 .job-tracker-activity-dot.status-ghosted { background-color: var(--job-status-ghosted); }

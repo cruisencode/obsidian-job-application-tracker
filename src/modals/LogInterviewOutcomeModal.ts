@@ -7,7 +7,6 @@ import { BaseApplicationModal } from "./BaseApplicationModal";
  * Modal dialog to log interview round debrief notes, record completion outcome, and advance pipeline stage.
  */
 export class LogInterviewOutcomeModal extends BaseApplicationModal {
-	private onComplete?: () => void;
 	selectedInterviewId = "";
 	private status: "Completed" | "Cancelled" = "Completed";
 	private outcomeNotes = "";
@@ -17,10 +16,10 @@ export class LogInterviewOutcomeModal extends BaseApplicationModal {
 		app: App,
 		plugin: JobApplicationTrackerPlugin,
 		application: JobApplication | null = null,
-		onComplete?: () => void
+		onComplete?: () => void,
+		onCancel?: () => void
 	) {
-		super(app, plugin, application);
-		this.onComplete = onComplete;
+		super(app, plugin, application, onComplete, onCancel);
 	}
 
 	renderContent(): void {
@@ -48,6 +47,16 @@ export class LogInterviewOutcomeModal extends BaseApplicationModal {
 
 		if (!this.selectedInterviewId) {
 			this.selectedInterviewId = interviews[0].id;
+			this.outcomeNotes = interviews[0].outcomeNotes || "";
+			this.status = interviews[0].status === "Cancelled" ? "Cancelled" : "Completed";
+		} else if (!this.outcomeNotes) {
+			const initialIv = interviews.find((i) => i.id === this.selectedInterviewId);
+			if (initialIv?.outcomeNotes) {
+				this.outcomeNotes = initialIv.outcomeNotes;
+			}
+			if (initialIv?.status === "Cancelled") {
+				this.status = "Cancelled";
+			}
 		}
 
 		// Interview Round Selector
@@ -62,9 +71,8 @@ export class LogInterviewOutcomeModal extends BaseApplicationModal {
 				dropdown.onChange((val) => {
 					this.selectedInterviewId = val;
 					const selected = interviews.find((i) => i.id === val);
-					if (selected && selected.outcomeNotes) {
-						this.outcomeNotes = selected.outcomeNotes;
-					}
+					this.outcomeNotes = selected?.outcomeNotes ?? "";
+					this.status = selected?.status === "Cancelled" ? "Cancelled" : "Completed";
 					this.renderContent();
 				});
 			});
@@ -149,6 +157,7 @@ export class LogInterviewOutcomeModal extends BaseApplicationModal {
 				this.outcomeNotes.trim() || undefined,
 				this.nextStage || undefined
 			);
+			this.isCompleted = true;
 			this.close();
 			if (this.onComplete) {
 				this.onComplete();

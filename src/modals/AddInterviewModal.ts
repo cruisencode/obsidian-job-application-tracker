@@ -19,7 +19,6 @@ export const INTERVIEW_TYPES: InterviewRoundType[] = [
  * Modal dialog to schedule a new interview round and optionally generate prep notes.
  */
 export class AddInterviewModal extends BaseApplicationModal {
-	private onComplete?: () => void;
 	private roundType: InterviewRoundType = "Recruiter Screen";
 	private roundName = "Recruiter Screen";
 	private date = "";
@@ -32,10 +31,10 @@ export class AddInterviewModal extends BaseApplicationModal {
 		app: App,
 		plugin: JobApplicationTrackerPlugin,
 		application: JobApplication | null = null,
-		onComplete?: () => void
+		onComplete?: () => void,
+		onCancel?: () => void
 	) {
-		super(app, plugin, application);
-		this.onComplete = onComplete;
+		super(app, plugin, application, onComplete, onCancel);
 		this.date = plugin.appService.getTodayDateString();
 	}
 
@@ -86,10 +85,10 @@ export class AddInterviewModal extends BaseApplicationModal {
 		// Date
 		new Setting(contentEl)
 			.setName("Interview Date")
-			.setDesc("Date of the interview (YYYY-MM-DD)")
+			.setDesc("Scheduled date of the interview")
 			.addText((text) => {
-				text.inputEl.maxLength = 20;
-				text.setPlaceholder("YYYY-MM-DD").setValue(this.date).onChange((value) => {
+				text.inputEl.type = "date";
+				text.setValue(this.date).onChange((value) => {
 					this.date = value;
 				});
 			});
@@ -164,7 +163,7 @@ export class AddInterviewModal extends BaseApplicationModal {
 			return;
 		}
 		if (this.date.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(this.date.trim())) {
-			new Notice("Interview Date must be in YYYY-MM-DD format.");
+			new Notice("Please select a valid date for Interview Date.");
 			btn?.setDisabled(false);
 			return;
 		}
@@ -193,14 +192,15 @@ export class AddInterviewModal extends BaseApplicationModal {
 				this.updateStatusToInterviewing
 			);
 
+			this.isCompleted = true;
 			this.close();
 			if (this.onComplete) {
 				this.onComplete();
 			}
 
-			// If prep note was generated, open it for immediate prep only if the main tracker page is not open in the main page section
-			if (result.prepFile && !this.plugin.isTrackerViewOpenInMain()) {
-				const leaf = this.app.workspace.getLeaf(false);
+			// If prep note was generated, open it in a new workspace tab
+			if (result.prepFile) {
+				const leaf = this.app.workspace.getLeaf("tab");
 				await leaf.openFile(result.prepFile);
 			}
 		} catch (err) {

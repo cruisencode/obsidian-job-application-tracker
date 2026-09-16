@@ -65,6 +65,18 @@ export class ApplicationService {
 		this.cachedApplications = null;
 	}
 
+	/**
+	 * Checks if a file is within the tracked application folder or has job-application frontmatter.
+	 */
+	isTrackedFile(file: TFile): boolean {
+		const appFolder = normalizePath(this.plugin.settings.trackerFolderPath);
+		if (file.path.startsWith(appFolder + "/") || file.path === appFolder) {
+			return true;
+		}
+		const cache = this.app.metadataCache.getFileCache(file);
+		return cache?.frontmatter?.type === "job-application";
+	}
+
 	private applyFrontMatterFields(fm: JobApplicationFrontMatter, fields: Partial<JobApplication>): void {
 		if (fields.company !== undefined) fm.company = fields.company;
 		if (fields.role !== undefined) fm.role = fields.role;
@@ -182,11 +194,12 @@ export class ApplicationService {
 	/**
 	 * Sanitizes a string so it can safely be used as a markdown filename in Obsidian.
 	 */
-	sanitizeFileName(name: string): string {
-		return name
+	sanitizeFileName(name: string, fallback = "Untitled Application"): string {
+		const clean = (name || "")
 			.replace(/[\\/:*?"<>|#^[\]]/g, "-")
 			.replace(/\s+/g, " ")
 			.trim();
+		return clean || fallback;
 	}
 
 	/**
@@ -290,6 +303,30 @@ export class ApplicationService {
 	}
 
 	/**
+	 * Formats the ## 📋 Overview markdown section.
+	 */
+	formatOverviewSection(data: Partial<JobApplication>): string {
+		const today = this.getTodayDateString();
+		let sec = `## 📋 Overview\n`;
+		if (data.salary) sec += `- **Salary / Comp:** ${escapeMarkdown(data.salary)}\n`;
+		if (data.location) sec += `- **Location:** ${escapeMarkdown(data.location)}\n`;
+		if (data.workplaceType) sec += `- **Workplace Model:** ${escapeMarkdown(data.workplaceType)}\n`;
+		if (data.employmentType) sec += `- **Employment Type:** ${escapeMarkdown(data.employmentType)}\n`;
+		if (data.source) sec += `- **Source:** ${escapeMarkdown(data.source)}\n`;
+		if (data.followUpDate) sec += `- **Follow-up / Deadline:** ${escapeMarkdown(data.followUpDate)}\n`;
+		if (data.jobUrl) {
+			const safeJobUrl = sanitizeUrl(data.jobUrl);
+			if (safeJobUrl) {
+				sec += `- **Job Posting:** [Link](${safeJobUrl})\n`;
+			} else {
+				sec += `- **Job Posting:** ${escapeMarkdown(data.jobUrl)}\n`;
+			}
+		}
+		sec += `- **Applied Date:** ${escapeMarkdown(data.dateApplied || today)}\n`;
+		return sec;
+	}
+
+	/**
 	 * Generates markdown body content for a newly created application.
 	 */
 	generateNoteContent(appData: Partial<JobApplication>): string {
@@ -298,23 +335,7 @@ export class ApplicationService {
 		const role = escapeMarkdown(appData.role) || "Role";
 
 		let body = `# ${company} - ${role}\n\n`;
-
-		body += `## 📋 Overview\n`;
-		if (appData.salary) body += `- **Salary / Comp:** ${escapeMarkdown(appData.salary)}\n`;
-		if (appData.location) body += `- **Location:** ${escapeMarkdown(appData.location)}\n`;
-		if (appData.workplaceType) body += `- **Workplace Model:** ${escapeMarkdown(appData.workplaceType)}\n`;
-		if (appData.employmentType) body += `- **Employment Type:** ${escapeMarkdown(appData.employmentType)}\n`;
-		if (appData.source) body += `- **Source:** ${escapeMarkdown(appData.source)}\n`;
-		if (appData.followUpDate) body += `- **Follow-up / Deadline:** ${escapeMarkdown(appData.followUpDate)}\n`;
-		if (appData.jobUrl) {
-			const safeJobUrl = sanitizeUrl(appData.jobUrl);
-			if (safeJobUrl) {
-				body += `- **Job Posting:** [Link](${safeJobUrl})\n`;
-			} else {
-				body += `- **Job Posting:** ${escapeMarkdown(appData.jobUrl)}\n`;
-			}
-		}
-		body += `- **Applied Date:** ${escapeMarkdown(appData.dateApplied || today)}\n\n`;
+		body += `${this.formatOverviewSection(appData)}\n`;
 
 		body += `## 👥 Key Contacts\n`;
 		if (appData.contacts && appData.contacts.length > 0) {
@@ -673,39 +694,81 @@ export class ApplicationService {
 			try {
 				const today = this.getTodayDateString();
 
+				let currentData: Partial<JobApplication> = {};
 				await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
 					this.applyFrontMatterFields(fm, fields);
 					fm.lastUpdated = today;
+					currentData = {
+						company: fm.company,
+						role: fm.role,
+						salary: fm.salary,
+						location: fm.location,
+						workplaceType: fm.workplaceType,
+						employmentType: fm.employmentType,
+						source: fm.source,
+						followUpDate: fm.followUpDate,
+						jobUrl: fm.jobUrl,
+						dateApplied: fm.dateApplied,
+						jobDescriptionFile: fm.jobDescriptionFile,
+					};
 				});
 
-				// Update Job Description section in note body if updated
-				if (fields.jobDescriptionFile !== undefined || newJobDescriptionText !== undefined) {
-					await this.app.vault.process(file, (content) => {
+				// Update Title, Overview, and Job Description sections in note body
+				await this.app.vault.process(file, (content) => {
+					let updated = content;
+
+					// 1. Update Title header if company or role were provided
+					if (fields.company !== undefined || fields.role !== undefined) {
+						const titleRegex = /(?:^|\n)(#\s+[^\n]+)/;
+						const company = escapeMarkdown(currentData.company) || "Company";
+						const role = escapeMarkdown(currentData.role) || "Role";
+						const newTitle = `# ${company} - ${role}`;
+						if (titleRegex.test(updated)) {
+							updated = updated.replace(titleRegex, (fullMatch) => {
+								const prefix = fullMatch.startsWith("\n") ? "\n" : "";
+								return `${prefix}${newTitle}`;
+							});
+						}
+					}
+
+					// 2. Update Overview section
+					const overviewSectionRegex = /(?:^|\n)(#{1,6}\s+(?:📋\s*)?Overview)[\s\S]*?(?=\n#{1,6}\s+|$)/i;
+					const newOverviewContent = this.formatOverviewSection(currentData);
+					if (overviewSectionRegex.test(updated)) {
+						updated = updated.replace(overviewSectionRegex, (fullMatch) => {
+							const prefix = fullMatch.startsWith("\n") ? "\n" : "";
+							return `${prefix}${newOverviewContent.trimEnd()}`;
+						});
+					}
+
+					// 3. Update Job Description section if updated
+					if (fields.jobDescriptionFile !== undefined || newJobDescriptionText !== undefined) {
 						const jdHeader = "## 📄 Job Description";
 						let newJdContent = `${jdHeader}\n`;
-						if (fields.jobDescriptionFile) {
-							const isPdf = fields.jobDescriptionFile.toLowerCase().endsWith(".pdf");
+						if (currentData.jobDescriptionFile) {
+							const isPdf = currentData.jobDescriptionFile.toLowerCase().endsWith(".pdf");
 							const title = isPdf ? "Job Description (PDF)" : "Job Description (Markdown)";
-							newJdContent += `> [!abstract]- 📎 ${title}\n> ![[${fields.jobDescriptionFile}]]\n\n`;
+							newJdContent += `> [!abstract]- 📎 ${title}\n> ![[${currentData.jobDescriptionFile}]]\n\n`;
 						}
 						if (newJobDescriptionText) {
 							newJdContent += `${newJobDescriptionText}\n`;
-						} else if (!fields.jobDescriptionFile) {
+						} else if (!currentData.jobDescriptionFile) {
 							newJdContent += `*Paste job description or requirements here...*\n`;
 						}
 
-						// Replace the JD section content while preserving any sections that follow
 						const jdSectionRegex = /(?:^|\n)(#{1,6}\s+(?:📄\s*)?Job Description)[\s\S]*?(?=\n#{1,6}\s+|$)/i;
-						if (jdSectionRegex.test(content)) {
-							return content.replace(jdSectionRegex, (fullMatch, header) => {
+						if (jdSectionRegex.test(updated)) {
+							updated = updated.replace(jdSectionRegex, (fullMatch, header) => {
 								const prefix = fullMatch.startsWith("\n") ? "\n" : "";
 								return `${prefix}${header}\n${newJdContent.substring(jdHeader.length + 1).trimEnd()}`;
 							});
+						} else {
+							updated = `${updated.trimEnd()}\n\n${newJdContent.trimEnd()}\n`;
 						}
-						// Fallback: append Job Description section to end of file
-						return `${content.trimEnd()}\n\n${newJdContent.trimEnd()}\n`;
-					});
-				}
+					}
+
+					return updated;
+				});
 
 				this.invalidateCache();
 				new Notice(`Updated application details for ${file.basename}`);
@@ -745,32 +808,20 @@ export class ApplicationService {
 			try {
 				const today = this.getTodayDateString();
 
+				let freshContacts: Contact[] = [];
+				let freshInterviews: InterviewRound[] = [];
+
 				await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
 					if (!Array.isArray(fm.contacts)) {
 						fm.contacts = [];
 					}
 					fm.contacts.push(contact);
 					fm.lastUpdated = today;
+					freshContacts = Array.isArray(fm.contacts) ? [...fm.contacts] : [];
+					freshInterviews = Array.isArray(fm.interviews) ? [...fm.interviews] : [];
 				});
 
-				// Update ## 👥 Key Contacts section in body
-				await this.app.vault.process(file, (content) => {
-					const contactLine = this.formatContactLine(contact);
-
-					const contactHeaderRegex = /(?:^|\n)(#{1,6}\s+(?:👥\s*)?Key Contacts)/i;
-					if (contactHeaderRegex.test(content)) {
-						if (content.includes("*No contacts added yet.*")) {
-							return content.replace("*No contacts added yet.*", () => contactLine);
-						} else {
-							return content.replace(contactHeaderRegex, (fullMatch, header) => {
-								const prefix = fullMatch.startsWith("\n") ? "\n" : "";
-								return `${prefix}${header}\n${contactLine}`;
-							});
-						}
-					}
-					// Fallback: append Key Contacts section to end of file
-					return `${content.trimEnd()}\n\n## 👥 Key Contacts\n${contactLine}\n`;
-				});
+				await this._syncNoteBodySections(file, { contacts: freshContacts, interviews: freshInterviews });
 
 				this.invalidateCache();
 				new Notice(`Added contact ${contact.name} to ${file.basename}`);
@@ -810,14 +861,15 @@ export class ApplicationService {
 		const appTitle = appFile instanceof TFile ? appFile.basename : `${appData.company} - ${appData.role}`;
 
 		const template = this.plugin.settings.interviewPrepTemplate || "";
+		const escapeVal = (val?: string) => (val ? val.replace(/\\/g, "\\\\").replace(/"/g, '\\"') : "");
 		const replacements: Record<string, string> = {
-			"{{company}}": appData.company,
-			"{{role}}": appData.role,
-			"{{roundName}}": interview.roundName,
-			"{{date}}": interview.date || this.getTodayDateString(),
-			"{{time}}": interview.time || "TBD",
-			"{{interviewers}}": interview.interviewers || "TBD",
-			"{{applicationNoteTitle}}": appTitle,
+			"{{company}}": escapeVal(appData.company),
+			"{{role}}": escapeVal(appData.role),
+			"{{roundName}}": escapeVal(interview.roundName),
+			"{{date}}": escapeVal(interview.date || this.getTodayDateString()),
+			"{{time}}": escapeVal(interview.time || "TBD"),
+			"{{interviewers}}": escapeVal(interview.interviewers || "TBD"),
+			"{{applicationNoteTitle}}": escapeVal(appTitle),
 		};
 		const renderedContent = template.replace(
 			/\{\{(?:company|role|roundName|date|time|interviewers|applicationNoteTitle)\}\}/g,
@@ -850,6 +902,9 @@ export class ApplicationService {
 
 				const today = this.getTodayDateString();
 
+				let freshContacts: Contact[] = [];
+				let freshInterviews: InterviewRound[] = [];
+
 				await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
 					if (!Array.isArray(fm.interviews)) {
 						fm.interviews = [];
@@ -868,26 +923,12 @@ export class ApplicationService {
 							note: `Scheduled interview: ${interview.roundName}`,
 						});
 					}
+
+					freshContacts = Array.isArray(fm.contacts) ? [...fm.contacts] : [];
+					freshInterviews = Array.isArray(fm.interviews) ? [...fm.interviews] : [];
 				});
 
-				// Update ## 📅 Interviews & Stages section in body
-				await this.app.vault.process(file, (content) => {
-					const interviewLine = this.formatInterviewLine(interview);
-
-					const interviewHeaderRegex = /(?:^|\n)(#{1,6}\s+(?:📅\s*)?Interviews\s*(?:&|and)?\s*Stages)/i;
-					if (interviewHeaderRegex.test(content)) {
-						if (content.includes("*No interviews scheduled yet.*")) {
-							return content.replace("*No interviews scheduled yet.*", () => interviewLine);
-						} else {
-							return content.replace(interviewHeaderRegex, (fullMatch, header) => {
-								const prefix = fullMatch.startsWith("\n") ? "\n" : "";
-								return `${prefix}${header}\n${interviewLine}`;
-							});
-						}
-					}
-					// Fallback: append Interviews & Stages section to end of file
-					return `${content.trimEnd()}\n\n## 📅 Interviews & Stages\n${interviewLine}\n`;
-				});
+				await this._syncNoteBodySections(file, { contacts: freshContacts, interviews: freshInterviews });
 
 				this.invalidateCache();
 				new Notice(`Added ${interview.roundName} to ${file.basename}`);
@@ -914,6 +955,8 @@ export class ApplicationService {
 		return await this.runWithFileLock(file, async () => {
 			try {
 				const today = this.getTodayDateString();
+				let freshContacts: Contact[] = [];
+				let freshInterviews: InterviewRound[] = [];
 
 				await this.app.fileManager.processFrontMatter(file, (fm: JobApplicationFrontMatter) => {
 					if (Array.isArray(fm.interviews)) {
@@ -937,7 +980,11 @@ export class ApplicationService {
 					}
 
 					fm.lastUpdated = today;
+					freshContacts = Array.isArray(fm.contacts) ? [...fm.contacts] : [];
+					freshInterviews = Array.isArray(fm.interviews) ? [...fm.interviews] : [];
 				});
+
+				await this._syncNoteBodySections(file, { contacts: freshContacts, interviews: freshInterviews });
 
 				if (outcomeNotes) {
 					await this.app.vault.process(file, (content) => {

@@ -84,9 +84,9 @@ export class NewApplicationModal extends Modal {
 		// Date Applied
 		new Setting(contentEl)
 			.setName("Date Applied")
-			.setDesc("Date of application (YYYY-MM-DD)")
+			.setDesc("Date when the application was submitted")
 			.addText((text) => {
-				text.inputEl.maxLength = 20;
+				text.inputEl.type = "date";
 				text.setValue(this.dateApplied).onChange((value) => {
 					this.dateApplied = value;
 				});
@@ -171,10 +171,10 @@ export class NewApplicationModal extends Modal {
 		// Follow-up Date
 		new Setting(contentEl)
 			.setName("Follow-up Date")
-			.setDesc("Optional reminder date (YYYY-MM-DD)")
+			.setDesc("Optional reminder or deadline date")
 			.addText((text) => {
-				text.inputEl.maxLength = 20;
-				text.setPlaceholder("YYYY-MM-DD").onChange((value) => {
+				text.inputEl.type = "date";
+				text.setValue(this.followUpDate).onChange((value) => {
 					this.followUpDate = value;
 				});
 			});
@@ -288,11 +288,11 @@ export class NewApplicationModal extends Modal {
 			return;
 		}
 		if (this.dateApplied.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(this.dateApplied.trim())) {
-			new Notice("Date Applied must be in YYYY-MM-DD format.");
+			new Notice("Please select a valid date for Date Applied.");
 			return;
 		}
 		if (this.followUpDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(this.followUpDate.trim())) {
-			new Notice("Follow-up Date must be in YYYY-MM-DD format.");
+			new Notice("Please select a valid date for Follow-up Date.");
 			return;
 		}
 		if (this.recruiterEmail.trim() && !sanitizeEmail(this.recruiterEmail.trim())) {
@@ -344,11 +344,9 @@ export class NewApplicationModal extends Modal {
 
 			this.close();
 
-			// Open the newly created note in active workspace only if the main tracker page is not open in the main page section
-			if (!this.plugin.isTrackerViewOpenInMain()) {
-				const leaf = this.app.workspace.getLeaf(false);
-				await leaf.openFile(file);
-			}
+			// Open the newly created note in a workspace tab
+			const leaf = this.app.workspace.getLeaf("tab");
+			await leaf.openFile(file);
 		} catch (err) {
 			console.error("Job Tracker: Modal action failed:", err);
 			new Notice(`Operation failed: ${err instanceof Error ? err.message : "Unknown error"}`);
