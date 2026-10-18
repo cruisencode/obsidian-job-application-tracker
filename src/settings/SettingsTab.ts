@@ -77,6 +77,42 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 						},
 					},
 					{
+						name: "Create a folder for each application",
+						desc: "When enabled, each new application is stored in a dedicated subfolder named after the company and role.",
+						render: (setting: Setting) => {
+							setting.addToggle((toggle) =>
+								toggle
+									.setValue(this.plugin.settings.createApplicationFolders)
+									.onChange(async (value) => {
+										this.plugin.settings.createApplicationFolders = value;
+										const storageSetting = setting.settingEl.parentElement?.querySelector<HTMLElement>(
+											".job-tracker-related-files-storage"
+										);
+										if (storageSetting) storageSetting.style.display = value ? "" : "flex";
+										await this.plugin.saveSettings();
+									})
+							);
+						},
+					},
+					{
+						name: "Related Files Storage",
+						desc: "Choose where attachments and interview prep notes are stored for applications created in their own folders.",
+						render: (setting: Setting) => {
+							setting.settingEl.addClass("job-tracker-related-files-storage");
+							setting.settingEl.style.display = this.plugin.settings.createApplicationFolders ? "" : "none";
+							setting.addDropdown((dropdown) => {
+								dropdown.addOption("shared", "Shared folders");
+								dropdown.addOption("application-specific", "Application-specific folders");
+								dropdown.setValue(this.plugin.settings.relatedFilesStorage);
+								dropdown.onChange(async (value) => {
+									this.plugin.settings.relatedFilesStorage =
+										value === "application-specific" ? "application-specific" : "shared";
+									await this.plugin.saveSettings();
+								});
+							});
+						},
+					},
+					{
 						name: "Interview Notes Folder",
 						desc: "Folder where generated interview prep and debrief notes will be stored.",
 						render: (setting: Setting) => {
