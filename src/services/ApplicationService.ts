@@ -70,6 +70,7 @@ export class ApplicationService {
 	 */
 	isTrackedFile(file: TFile): boolean {
 		const appFolder = normalizePath(this.plugin.settings.trackerFolderPath);
+		if (this.isExcludedFolderPath(file.path)) return false;
 		if (file.path.startsWith(appFolder + "/") || file.path === appFolder) {
 			return true;
 		}
@@ -202,6 +203,36 @@ export class ApplicationService {
 		return clean || fallback;
 	}
 
+	private limitPathSegment(name: string, maxLength = 180): string {
+		return name.length > maxLength ? name.substring(0, maxLength).trim() : name;
+	}
+
+	private isPathInFolder(filePath: string, folderPath: string): boolean {
+		const normalizedFilePath = normalizePath(filePath);
+		const normalizedFolderPath = normalizePath(folderPath);
+		return normalizedFilePath === normalizedFolderPath || normalizedFilePath.startsWith(normalizedFolderPath + "/");
+	}
+
+	private isExcludedFolderPath(filePath: string): boolean {
+		return [this.plugin.settings.interviewNotesFolderPath, this.plugin.settings.attachmentsFolderPath]
+			.some((folderPath) => this.isPathInFolder(filePath, folderPath));
+	}
+
+	private getUniquePath(folderPath: string, baseName: string, extension = ""): string {
+		const normalizedFolder = normalizePath(folderPath);
+		const suffix = extension && !extension.startsWith(".") ? `.${extension}` : extension;
+		let path = `${normalizedFolder}/${baseName}${suffix}`;
+		let counter = 1;
+		while (this.app.vault.getAbstractFileByPath(path) != null && counter < 1000) {
+			path = `${normalizedFolder}/${baseName} (${counter})${suffix}`;
+			counter++;
+		}
+		if (this.app.vault.getAbstractFileByPath(path) != null) {
+			throw new Error(`Unable to find an available path for "${baseName}".`);
+		}
+		return path;
+	}
+
 	/**
 	 * Formats today's date in YYYY-MM-DD format.
 	 */
@@ -273,25 +304,19 @@ export class ApplicationService {
 			await this.ensureFolder(folderPath);
 
 			const arrayBuffer = await file.arrayBuffer();
-			const safeOriginalName = this.sanitizeFileName(file.name);
-			const cleanPrefix = prefix ? `${this.sanitizeFileName(prefix)} - ` : "";
+			const safeOriginalName = this.limitPathSegment(this.sanitizeFileName(file.name));
+			const cleanPrefix = prefix ? `${this.limitPathSegment(this.sanitizeFileName(prefix))} - ` : "";
 			let baseFileName = `${cleanPrefix}${safeOriginalName}`;
 			if (baseFileName.length > 180) {
 				const extIndex = baseFileName.lastIndexOf(".");
 				const ext = extIndex !== -1 ? baseFileName.substring(extIndex) : "";
-				baseFileName = baseFileName.substring(0, 180 - ext.length).trim() + ext;
+				baseFileName = baseFileName.substring(0, Math.max(1, 180 - ext.length)).trim() + ext;
 			}
 
-			let filePath = `${normalizePath(folderPath)}/${baseFileName}`;
-			let counter = 1;
-
-			while (this.app.vault.getAbstractFileByPath(filePath) != null && counter < 1000) {
-				const extIndex = baseFileName.lastIndexOf(".");
-				const nameWithoutExt = extIndex !== -1 ? baseFileName.substring(0, extIndex) : baseFileName;
-				const ext = extIndex !== -1 ? baseFileName.substring(extIndex) : "";
-				filePath = `${normalizePath(folderPath)}/${nameWithoutExt} (${counter})${ext}`;
-				counter++;
-			}
+			const extIndex = baseFileName.lastIndexOf(".");
+			const nameWithoutExt = extIndex !== -1 ? baseFileName.substring(0, extIndex) : baseFileName;
+			const ext = extIndex !== -1 ? baseFileName.substring(extIndex) : "";
+			const filePath = this.getUniquePath(folderPath, nameWithoutExt, ext);
 
 			return await this.app.vault.createBinary(filePath, arrayBuffer);
 
@@ -408,17 +433,14 @@ export class ApplicationService {
 			const status = data.status || this.plugin.settings.defaultStatus || "Applied";
 			const dateApplied = data.dateApplied || today;
 
-			let baseFileName = this.sanitizeFileName(`${data.company} - ${data.role}`);
-			if (baseFileName.length > 180) {
-				baseFileName = baseFileName.substring(0, 180).trim();
+			const baseFileName = this.limitPathSegment(this.sanitizeFileName(`${data.company} - ${data.role}`));
+			let applicationFolder = normalizePath(folderPath);
+			if (this.plugin.settings.createApplicationFolders) {
+				const folderName = this.limitPathSegment(this.sanitizeFileName(`${data.company} - ${data.role}`));
+				applicationFolder = this.getUniquePath(applicationFolder, folderName);
+				await this.ensureFolder(applicationFolder);
 			}
-			let filePath = `${normalizePath(folderPath)}/${baseFileName}.md`;
-			let counter = 1;
-
-			while (this.app.vault.getAbstractFileByPath(filePath) != null && counter < 1000) {
-				filePath = `${normalizePath(folderPath)}/${baseFileName} (${counter}).md`;
-				counter++;
-			}
+			const filePath = this.getUniquePath(applicationFolder, baseFileName, ".md");
 
 			const initialStatusHistory: StatusHistoryEntry[] = [
 				{
@@ -487,8 +509,7 @@ export class ApplicationService {
 		}
 
 		// Check if file is in interview notes folder
-		const interviewFolder = normalizePath(this.plugin.settings.interviewNotesFolderPath);
-		if (file.path.startsWith(interviewFolder + "/") || file.path === interviewFolder) {
+		if (this.isExcludedFolderPath(file.path)) {
 			return null;
 		}
 
@@ -593,7 +614,6 @@ export class ApplicationService {
 
 		const applications: JobApplication[] = [];
 		const folderPrefix = normalizePath(this.plugin.settings.trackerFolderPath);
-		const interviewFolderPrefix = normalizePath(this.plugin.settings.interviewNotesFolderPath);
 
 		// Direct scan of configured application folder
 		const trackerAbstract = this.app.vault.getAbstractFileByPath(folderPrefix);
@@ -601,12 +621,12 @@ export class ApplicationService {
 			const collectFromFolder = (folder: TFolder) => {
 				for (const child of folder.children) {
 					if (child instanceof TFile && child.extension === "md") {
-						if (!child.path.startsWith(interviewFolderPrefix + "/") && child.path !== interviewFolderPrefix) {
+						if (!this.isExcludedFolderPath(child.path)) {
 							const appData = this.getApplicationFromCache(child);
 							if (appData) applications.push(appData);
 						}
 					} else if (child instanceof TFolder) {
-						if (!child.path.startsWith(interviewFolderPrefix + "/") && child.path !== interviewFolderPrefix) {
+						if (!this.isExcludedFolderPath(child.path)) {
 							collectFromFolder(child);
 						}
 					}
@@ -1218,4 +1238,3 @@ export class ApplicationService {
 		});
 	}
 }
-

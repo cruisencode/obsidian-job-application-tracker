@@ -77,6 +77,20 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 						},
 					},
 					{
+						name: "Create a folder for each application",
+						desc: "When enabled, each new application is stored in a dedicated subfolder named after the company and role.",
+						render: (setting: Setting) => {
+							setting.addToggle((toggle) =>
+								toggle
+									.setValue(this.plugin.settings.createApplicationFolders)
+									.onChange(async (value) => {
+										this.plugin.settings.createApplicationFolders = value;
+										await this.plugin.saveSettings();
+									})
+							);
+						},
+					},
+					{
 						name: "Interview Notes Folder",
 						desc: "Folder where generated interview prep and debrief notes will be stored.",
 						render: (setting: Setting) => {

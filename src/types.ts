@@ -92,6 +92,7 @@ export interface JobApplication {
 
 export interface JobApplicationTrackerSettings {
 	trackerFolderPath: string;
+	createApplicationFolders: boolean;
 	interviewNotesFolderPath: string;
 	attachmentsFolderPath: string;
 	statuses: JobStatus[];

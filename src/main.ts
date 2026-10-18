@@ -284,6 +284,7 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 		const data = (await this.loadData()) as Partial<JobApplicationTrackerSettings> | null;
 		this.settings = {
 			trackerFolderPath: data?.trackerFolderPath ?? DEFAULT_SETTINGS.trackerFolderPath,
+			createApplicationFolders: data?.createApplicationFolders ?? DEFAULT_SETTINGS.createApplicationFolders,
 			interviewNotesFolderPath: data?.interviewNotesFolderPath ?? DEFAULT_SETTINGS.interviewNotesFolderPath,
 			attachmentsFolderPath: data?.attachmentsFolderPath ?? DEFAULT_SETTINGS.attachmentsFolderPath,
 			statuses: Array.isArray(data?.statuses) && data.statuses.length > 0

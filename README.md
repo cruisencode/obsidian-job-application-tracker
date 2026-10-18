@@ -93,6 +93,7 @@ Open the Obsidian Command Palette (<kbd>Cmd</kbd> + <kbd>P</kbd> or <kbd>Ctrl</k
 
 Under **Settings** ➔ **Job Application Tracker**, you can configure:
 - **Applications Folder**: Target folder where application notes are created (default: `Job Applications`).
+- **Create a folder for each application**: Optional setting that stores each new application note in a sanitized, collision-safe subfolder named after the company and role. Existing flat application notes remain supported.
 - **Interview Notes Folder**: Subfolder for generated prep and debrief notes (default: `Job Applications/Interviews`).
 - **Attachments Folder**: Subfolder where uploaded PDF and Markdown job descriptions are stored (default: `Job Applications/Attachments`).
 - **Default View Location**: Main Tab (Center) or Sidebar when opening via ribbon icon or command.
