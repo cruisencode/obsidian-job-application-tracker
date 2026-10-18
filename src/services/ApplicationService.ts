@@ -233,6 +233,23 @@ export class ApplicationService {
 		return path;
 	}
 
+	private getRelatedFilesFolder(applicationFile: TFile | undefined, kind: "Attachments" | "Interviews"): string {
+		const sharedFolder = kind === "Attachments"
+			? (this.plugin.settings.attachmentsFolderPath || "Job Applications/Attachments")
+			: this.plugin.settings.interviewNotesFolderPath;
+		if (
+			!applicationFile ||
+			!this.plugin.settings.createApplicationFolders ||
+			this.plugin.settings.relatedFilesStorage !== "application-specific" ||
+			!applicationFile.parent ||
+			normalizePath(applicationFile.parent.path) === normalizePath(this.plugin.settings.trackerFolderPath) ||
+			this.isExcludedFolderPath(applicationFile.parent.path)
+		) {
+			return sharedFolder;
+		}
+		return `${applicationFile.parent.path}/${kind}`;
+	}
+
 	/**
 	 * Formats today's date in YYYY-MM-DD format.
 	 */
@@ -298,9 +315,9 @@ export class ApplicationService {
 	/**
 	 * Saves an attachment file (PDF, MD, etc.) into the attachments folder and returns the created TFile.
 	 */
-	async saveAttachment(file: File, prefix?: string): Promise<TFile> {
+	async saveAttachment(file: File, prefix?: string, applicationFile?: TFile): Promise<TFile> {
 		try {
-			const folderPath = this.plugin.settings.attachmentsFolderPath || "Job Applications/Attachments";
+			const folderPath = this.getRelatedFilesFolder(applicationFile, "Attachments");
 			await this.ensureFolder(folderPath);
 
 			const arrayBuffer = await file.arrayBuffer();
@@ -860,24 +877,15 @@ export class ApplicationService {
 		appData: JobApplication,
 		interview: InterviewRound
 	): Promise<TFile> {
-		const folderPath = this.plugin.settings.interviewNotesFolderPath;
+		const appFile = this.resolveFile(appData.filePath);
+		const folderPath = this.getRelatedFilesFolder(appFile instanceof TFile ? appFile : undefined, "Interviews");
 		await this.ensureFolder(folderPath);
 
-		let baseFileName = this.sanitizeFileName(
+		const baseFileName = this.limitPathSegment(this.sanitizeFileName(
 			`${appData.company} - ${interview.roundName} - Prep`
-		);
-		if (baseFileName.length > 180) {
-			baseFileName = baseFileName.substring(0, 180).trim();
-		}
-		let filePath = `${normalizePath(folderPath)}/${baseFileName}.md`;
-		let counter = 1;
+		));
+		const filePath = this.getUniquePath(folderPath, baseFileName, ".md");
 
-		while (this.app.vault.getAbstractFileByPath(filePath) != null && counter < 1000) {
-			filePath = `${normalizePath(folderPath)}/${baseFileName} (${counter}).md`;
-			counter++;
-		}
-
-		const appFile = this.resolveFile(appData.filePath);
 		const appTitle = appFile instanceof TFile ? appFile.basename : `${appData.company} - ${appData.role}`;
 
 		const template = this.plugin.settings.interviewPrepTemplate || "";

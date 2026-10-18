@@ -306,7 +306,10 @@ export class NewApplicationModal extends Modal {
 
 		try {
 			let attachmentPath = existingVaultPath || "";
-			if (uploadedFile) {
+			const useApplicationSpecificStorage =
+				this.plugin.settings.createApplicationFolders &&
+				this.plugin.settings.relatedFilesStorage === "application-specific";
+			if (uploadedFile && !useApplicationSpecificStorage) {
 				const savedFile = await this.plugin.appService.saveAttachment(
 					uploadedFile,
 					`${this.company.trim()} - ${this.role.trim()}`
@@ -341,6 +344,17 @@ export class NewApplicationModal extends Modal {
 				jobDescriptionFile: attachmentPath || undefined,
 				contacts: contacts,
 			});
+
+			if (uploadedFile && useApplicationSpecificStorage) {
+				const savedFile = await this.plugin.appService.saveAttachment(
+					uploadedFile,
+					`${this.company.trim()} - ${this.role.trim()}`,
+					file
+				);
+				await this.plugin.appService.updateApplicationDetails(file, {
+					jobDescriptionFile: savedFile.path,
+				});
+			}
 
 			this.close();
 

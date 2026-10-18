@@ -304,18 +304,19 @@ export class EditApplicationModal extends BaseApplicationModal {
 				return;
 			}
 
+			const file = this.resolveApplicationFile();
+			if (!file) {
+				return;
+			}
+
 			let finalAttachmentPath = this.jobDescriptionFile;
 			if (this.uploadedFile) {
 				const saved = await this.plugin.appService.saveAttachment(
 					this.uploadedFile,
-					`${this.company.trim()} - ${this.role.trim()}`
+					`${this.company.trim()} - ${this.role.trim()}`,
+					file
 				);
 				finalAttachmentPath = saved.path;
-			}
-
-			const file = this.resolveApplicationFile();
-			if (!file) {
-				return;
 			}
 
 			await this.plugin.appService.updateApplicationDetails(

@@ -119,6 +119,7 @@ date: "{{date}}"
 export const DEFAULT_SETTINGS: JobApplicationTrackerSettings = {
 	trackerFolderPath: "Job Applications",
 	createApplicationFolders: false,
+	relatedFilesStorage: "shared",
 	interviewNotesFolderPath: "Job Applications/Interviews",
 	attachmentsFolderPath: "Job Applications/Attachments",
 	statuses: DEFAULT_STATUSES,
