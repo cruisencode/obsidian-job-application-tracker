@@ -132,5 +132,6 @@ export interface JobApplicationFrontMatter {
 	| "location"
 	| "salary"
 	| "source"
+	| "applicationType"
 	| "lastUpdated"
 	| "followUpDate";
