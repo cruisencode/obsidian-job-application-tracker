@@ -212,6 +212,26 @@ export class JobApplicationTrackerSettingTab extends PluginSettingTab {
 							});
 						},
 					},
+					{
+						name: "Application Types",
+						desc: "Comma-separated list of application types (e.g. CV, CV & Cover Letter, Quick Apply).",
+						render: (setting: Setting) => {
+							setting.addTextArea((text) => {
+								text
+									.setValue(this.plugin.settings.defaultApplicationTypes.join(", "))
+									.onChange((value) => {
+										const cleanSources = value
+											.split(",")
+											.map((s) => s.trim().replace(/[\\#^[\]]/g, ""))
+											.filter((s) => s.length > 0);
+										this.plugin.settings.defaultApplicationTypes =
+											cleanSources.length > 0 ? cleanSources : [...DEFAULT_SETTINGS.defaultApplicationTypes];
+										this.debouncedSave();
+									});
+								text.inputEl.rows = 2;
+							});
+						},
+					},
 				],
 			},
 			{
