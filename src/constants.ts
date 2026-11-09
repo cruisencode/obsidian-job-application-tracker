@@ -35,6 +35,14 @@ export const DEFAULT_SOURCE_OPTIONS: string[] = [
 	"Other",
 ];
 
+export const DEFAULT_APPLICATION_TYPES: string[] = [
+	"CV",
+	"Cover Letter",
+	"CV & Cover Letter",
+	"Quick Apply",
+	"Other",
+];
+
 export const DEFAULT_INTERVIEW_PREP_TEMPLATE = `---
 type: interview-prep
 company: "{{company}}"
@@ -124,5 +132,6 @@ export const DEFAULT_SETTINGS: JobApplicationTrackerSettings = {
 	defaultStatus: "Applied",
 	interviewPrepTemplate: DEFAULT_INTERVIEW_PREP_TEMPLATE,
 	defaultSourceOptions: DEFAULT_SOURCE_OPTIONS,
+	defaultApplicationTypes: DEFAULT_APPLICATION_TYPES,
 	openViewLocation: "tab",
 };
