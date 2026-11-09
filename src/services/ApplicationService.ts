@@ -87,6 +87,7 @@ export class ApplicationService {
 		if (fields.salary !== undefined) fm.salary = fields.salary;
 		if (fields.jobUrl !== undefined) fm.jobUrl = fields.jobUrl;
 		if (fields.source !== undefined) fm.source = fields.source;
+		if (fields.applicationType !== undefined) fm.applicationType = fields.applicationType;
 		if (fields.followUpDate !== undefined) fm.followUpDate = fields.followUpDate;
 		if (fields.dateApplied !== undefined) fm.dateApplied = fields.dateApplied;
 		if (fields.jobDescriptionFile !== undefined) fm.jobDescriptionFile = fields.jobDescriptionFile;
@@ -313,6 +314,7 @@ export class ApplicationService {
 		if (data.workplaceType) sec += `- **Workplace Model:** ${escapeMarkdown(data.workplaceType)}\n`;
 		if (data.employmentType) sec += `- **Employment Type:** ${escapeMarkdown(data.employmentType)}\n`;
 		if (data.source) sec += `- **Source:** ${escapeMarkdown(data.source)}\n`;
+		if (data.applicationType) sec += `- **Application Type:** ${escapeMarkdown(data.applicationType)}\n`;
 		if (data.followUpDate) sec += `- **Follow-up / Deadline:** ${escapeMarkdown(data.followUpDate)}\n`;
 		if (data.jobUrl) {
 			const safeJobUrl = sanitizeUrl(data.jobUrl);
@@ -394,6 +396,7 @@ export class ApplicationService {
 		salary?: string;
 		jobUrl?: string;
 		source?: string;
+		applicationType?: string;
 		followUpDate?: string;
 		notes?: string;
 		jobDescription?: string;
@@ -441,6 +444,7 @@ export class ApplicationService {
 				salary: data.salary || "",
 				jobUrl: data.jobUrl || "",
 				source: data.source || "",
+				applicationType: data.applicationType || "",
 				followUpDate: data.followUpDate || undefined,
 				jobDescriptionFile: data.jobDescriptionFile || "",
 				tags: ["job-application"],

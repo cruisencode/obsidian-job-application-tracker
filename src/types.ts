@@ -80,6 +80,7 @@ export interface JobApplication {
 	salary?: string;
 	jobUrl?: string;
 	source?: string; // e.g. "LinkedIn", "Referral", "Indeed", "Company Site"
+	applicationType?: string;
 	followUpDate?: string; // YYYY-MM-DD
 	contacts: Contact[];
 	interviews: InterviewRound[];
@@ -115,6 +116,7 @@ export interface JobApplicationFrontMatter {
 	salary?: string;
 	jobUrl?: string;
 	source?: string;
+	applicationType?: string;
 	followUpDate?: string;
 	jobDescriptionFile?: string;
 	tags?: string[];
