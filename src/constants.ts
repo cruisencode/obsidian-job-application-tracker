@@ -37,7 +37,6 @@ export const DEFAULT_SOURCE_OPTIONS: string[] = [
 
 export const DEFAULT_APPLICATION_TYPES: string[] = [
 	"CV",
-	"Cover Letter",
 	"CV & Cover Letter",
 	"Quick Apply",
 	"Other",
