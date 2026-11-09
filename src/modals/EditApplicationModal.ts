@@ -209,7 +209,7 @@ export class EditApplicationModal extends BaseApplicationModal {
 				for (const src of this.plugin.settings.defaultApplicationTypes) {
 					dropdown.addOption(src, src);
 				}
-				dropdown.setValue(this.source || this.plugin.settings.defaultApplicationTypes[0]);
+				dropdown.setValue(this.applicationType || this.plugin.settings.defaultApplicationTypes[0]);
 				dropdown.onChange((value) => {
 					this.applicationType = value;
 				});
