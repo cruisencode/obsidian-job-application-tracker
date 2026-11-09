@@ -19,6 +19,7 @@ export class EditApplicationModal extends BaseApplicationModal {
 	private salary = "";
 	private jobUrl = "";
 	private source = "";
+	private applicationType = "";
 	private followUpDate = "";
 	private jobDescriptionFile = "";
 	private uploadedFile: File | null = null;
@@ -54,6 +55,7 @@ export class EditApplicationModal extends BaseApplicationModal {
 		this.salary = app.salary || "";
 		this.jobUrl = app.jobUrl || "";
 		this.source = app.source || "";
+		this.applicationType = app.applicationType || "";
 		this.followUpDate = app.followUpDate || "";
 		this.jobDescriptionFile = app.jobDescriptionFile || "";
 	}
@@ -199,6 +201,20 @@ export class EditApplicationModal extends BaseApplicationModal {
 				});
 			});
 
+		// Application Type
+		new Setting(contentEl)
+			.setName("Application Type")
+			.setDesc("How did you apply  to this role?")
+			.addDropdown((dropdown) => {
+				for (const src of this.plugin.settings.defaultApplicationTypes) {
+					dropdown.addOption(src, src);
+				}
+				dropdown.setValue(this.source || this.plugin.settings.defaultApplicationTypes[0]);
+				dropdown.onChange((value) => {
+					this.applicationType = value;
+				});
+			});
+
 		// Follow-up Date
 		new Setting(contentEl)
 			.setName("Follow-up / Deadline Date")
@@ -331,6 +347,7 @@ export class EditApplicationModal extends BaseApplicationModal {
 					salary: this.salary.trim(),
 					jobUrl: this.jobUrl.trim(),
 					source: this.source.trim(),
+					applicationType: this.applicationType.trim(),
 					followUpDate: this.followUpDate.trim() || undefined,
 					jobDescriptionFile: finalAttachmentPath || undefined,
 				},
