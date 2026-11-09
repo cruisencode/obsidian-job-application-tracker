@@ -11,7 +11,7 @@ An all-in-one job application pipeline and career search command center for [Obs
 
 ### 📊 Visual Dashboard with 4 View Modes
 - **Kanban Board**: Drag-and-drop cards across pipeline stage columns (*Wishlist* ➔ *Applied* ➔ *Screening* ➔ *Interviewing* ➔ *Offer* ➔ *Accepted* / *Rejected* / *Withdrawn* / *Ghosted*). Moving cards instantly updates note frontmatter and logs timestamped status activity.
-- **Table View**: Sortable columns (Company, Role, Status, Applied Date, Location, Workplace Model, Salary, Source), clickable status badges, and quick action menus.
+- **Table View**: Sortable columns (Company, Role, Status, Applied Date, Location, Workplace Model, Salary, Source, Application Type), clickable status badges, and quick action menus.
 - **List View**: Compact card layout highlighting workplace type, compensation, follow-up deadlines, and next scheduled interviews.
 - **Metrics & Conversion Analytics**:
   - **Sankey Pipeline Diagram**: Pure native SVG vector Sankey diagram charting the flow from application sources through screening and interview stages to final outcomes (zero external dependencies, zero permission prompts).
@@ -24,7 +24,7 @@ An all-in-one job application pipeline and career search command center for [Obs
 - Each application is saved as a Markdown note with clean YAML frontmatter in your designated applications folder (`Job Applications/` by default).
 - Zero vendor lock-in; fully compatible with Obsidian Search, Dataview, and graph view.
 - Automatically generated note sections:
-  - 📋 **Overview**: Role, Salary, Location, Workplace Model (Remote/Hybrid/On-site), Employment Type, Source, Follow-up Date, Job Posting link, Applied Date.
+  - 📋 **Overview**: Role, Salary, Location, Workplace Model (Remote/Hybrid/On-site), Employment Type, Source, Application Type, Follow-up Date, Job Posting link, Applied Date.
   - 👥 **Key Contacts**: Dynamic list of hiring managers, recruiters, coordinators.
   - 📅 **Interviews & Stages**: Chronological list of interview rounds linked to prep notes.
   - 📝 **Notes & Activity Log**: Timestamped audit trail of status updates and feedback.
@@ -98,6 +98,7 @@ Under **Settings** ➔ **Job Application Tracker**, you can configure:
 - **Default View Location**: Main Tab (Center) or Sidebar when opening via ribbon icon or command.
 - **Default Initial Status**: Default stage for new applications (default: `Applied`).
 - **Application Sources**: Comma-separated list of sources (e.g. *LinkedIn, Referral, Company Website, Indeed, Wellfound, Otta*).
+- **Application Types**: Comma-separated list of application types (e.g. *CV, CV & Cover Letter, Quick Apply*).
 - **Interview Prep Note Template**: Full Markdown template supporting placeholders:
   - `{{company}}`
   - `{{role}}`
