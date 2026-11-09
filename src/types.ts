@@ -98,6 +98,7 @@ export interface JobApplicationTrackerSettings {
 	defaultStatus: JobStatus;
 	interviewPrepTemplate: string;
 	defaultSourceOptions: string[];
+	defaultApplicationTypes: string[];
 	openViewLocation: "tab" | "right-sidebar" | "left-sidebar";
 }
 
