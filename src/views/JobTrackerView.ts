@@ -394,6 +394,7 @@ export class JobTrackerView extends ItemView {
 					(a.role ?? "").toLowerCase().includes(q) ||
 					(a.location && a.location.toLowerCase().includes(q)) ||
 					(a.source && a.source.toLowerCase().includes(q)) ||
+					(a.applicationType && a.applicationType.toLocaleLowerCase().includes(q)) ||
 					(a.salary && a.salary.toLowerCase().includes(q)) ||
 					(a.contacts?.some(
 						(c) =>
