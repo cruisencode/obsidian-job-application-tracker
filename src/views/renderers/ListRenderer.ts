@@ -89,6 +89,11 @@ export class ListRenderer {
 				setIcon(itemSpan.createSpan({ cls: "job-tracker-detail-icon" }), "link");
 				itemSpan.createSpan({ text: ` ${app.source}` });
 			}
+			if (app.applicationType) {
+				const itemSpan = detailsRow.createSpan({ cls: "job-tracker-detail-item" });
+				setIcon(itemSpan.createSpan({ cls: "job-tracker-detail-icon" }), "link");
+				itemSpan.createSpan({ text: ` ${app.applicationType}` });
+			}
 			if (app.dateApplied) {
 				const itemSpan = detailsRow.createSpan({ cls: "job-tracker-detail-item" });
 				setIcon(itemSpan.createSpan({ cls: "job-tracker-detail-icon" }), "calendar");
