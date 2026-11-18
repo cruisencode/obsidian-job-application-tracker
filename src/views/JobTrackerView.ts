@@ -42,6 +42,7 @@ export interface MetricsData {
 	offerCount: number;
 	acceptedCount: number;
 	sourceMap: Map<string, { total: number; interviews: number; offers: number }>;
+	applicationTypeMap: Map<string, { total: number; interviews: number; offers: number }>;
 	allHistoryEntries: { company: string; role: string; filePath: string; date: string; status: string; note?: string }[];
 }
 
@@ -645,6 +646,20 @@ export class JobTrackerView extends ItemView {
 			sourceMap.set(src, entry);
 		}
 
+		const applicationTypeMap = new Map<string, { total: number; interviews: number; offers: number }>();
+		for (const h of appHistories) {
+			const src = h.app.applicationType || "Unspecified";
+			const entry = applicationTypeMap.get(src) || { total: 0, interviews: 0, offers: 0 };
+			entry.total++;
+			if (h.visited.includes("Interviewing") || (h.app.interviews && h.app.interviews.length > 0)) {
+				entry.interviews++;
+			}
+			if (h.visited.includes("Offer") || h.app.status === "Offer") {
+				entry.offers++;
+			}
+			applicationTypeMap.set(src, entry);
+		}
+
 		const allHistoryEntries: { company: string; role: string; filePath: string; date: string; status: string; note?: string }[] = [];
 		for (const app of this.applications) {
 			for (const h of app.statusHistory || []) {
@@ -677,6 +692,7 @@ export class JobTrackerView extends ItemView {
 			offerCount: offerApps.length,
 			acceptedCount: acceptedApps.length,
 			sourceMap,
+			applicationTypeMap,
 			allHistoryEntries,
 		};
 		this.metricsVersion = this.dataVersion;

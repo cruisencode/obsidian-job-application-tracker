@@ -115,7 +115,38 @@ export class MetricsRenderer {
 			}
 		}
 
-		// 5. Section: Recent Activity Timeline
+		// 5. Section: Application Type Performance Analytics
+		const applicationTypeSection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
+		applicationTypeSection.createEl("h4", { text: "Application Type Performance & Conversion" });
+
+		if (m.applicationTypeMap.size === 0) {
+			applicationTypeSection.createEl("p", {
+				text: "No application type data available yet.",
+				cls: "text-muted",
+			});
+		} else {
+			const applicationTypeTable = applicationTypeSection.createEl("table", { cls: "job-tracker-table job-tracker-application-type-table" });
+			const stHead = applicationTypeTable.createEl("thead");
+			const stHeadRow = stHead.createEl("tr");
+			stHeadRow.createEl("th", { text: "Application Type" });
+			stHeadRow.createEl("th", { text: "Applications" });
+			stHeadRow.createEl("th", { text: "Interviews Landed" });
+			stHeadRow.createEl("th", { text: "Offers Landed" });
+			stHeadRow.createEl("th", { text: "Interview %" });
+
+			const stBody = applicationTypeTable.createEl("tbody");
+			for (const [applicationTypeName, stats] of m.applicationTypeMap.entries()) {
+				const tr = stBody.createEl("tr");
+				tr.createEl("td", { text: applicationTypeName, cls: "font-semibold" });
+				tr.createEl("td", { text: `${stats.total}` });
+				tr.createEl("td", { text: `${stats.interviews}` });
+				tr.createEl("td", { text: `${stats.offers}` });
+				const applIvRate = stats.total > 0 ? ((stats.interviews / stats.total) * 100).toFixed(0) : "0";
+				tr.createEl("td", { text: `${applIvRate}%` });
+			}
+		}
+
+		// 6. Section: Recent Activity Timeline
 		const activitySection = metricsContainer.createDiv({ cls: "job-tracker-metrics-section" });
 		activitySection.createEl("h4", { text: "Recent Application Activity" });
 
