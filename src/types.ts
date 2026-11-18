@@ -80,6 +80,7 @@ export interface JobApplication {
 	salary?: string;
 	jobUrl?: string;
 	source?: string; // e.g. "LinkedIn", "Referral", "Indeed", "Company Site"
+	applicationType?: string;
 	followUpDate?: string; // YYYY-MM-DD
 	contacts: Contact[];
 	interviews: InterviewRound[];
@@ -98,6 +99,7 @@ export interface JobApplicationTrackerSettings {
 	defaultStatus: JobStatus;
 	interviewPrepTemplate: string;
 	defaultSourceOptions: string[];
+	defaultApplicationTypes: string[];
 	openViewLocation: "tab" | "right-sidebar" | "left-sidebar";
 }
 
@@ -114,6 +116,7 @@ export interface JobApplicationFrontMatter {
 	salary?: string;
 	jobUrl?: string;
 	source?: string;
+	applicationType?: string;
 	followUpDate?: string;
 	jobDescriptionFile?: string;
 	tags?: string[];
@@ -129,5 +132,6 @@ export interface JobApplicationFrontMatter {
 	| "location"
 	| "salary"
 	| "source"
+	| "applicationType"
 	| "lastUpdated"
 	| "followUpDate";

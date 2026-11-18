@@ -294,6 +294,9 @@ export default class JobApplicationTrackerPlugin extends Plugin {
 			defaultSourceOptions: Array.isArray(data?.defaultSourceOptions) && data.defaultSourceOptions.length > 0
 				? [...data.defaultSourceOptions]
 				: [...DEFAULT_SETTINGS.defaultSourceOptions],
+			defaultApplicationTypes: Array.isArray(data?.defaultApplicationTypes) && data.defaultApplicationTypes.length > 0
+				? [...data.defaultApplicationTypes]
+				: [...DEFAULT_SETTINGS.defaultApplicationTypes],
 			openViewLocation: data?.openViewLocation ?? DEFAULT_SETTINGS.openViewLocation,
 		};
 	}

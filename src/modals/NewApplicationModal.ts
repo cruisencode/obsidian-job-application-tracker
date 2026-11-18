@@ -20,6 +20,7 @@ export class NewApplicationModal extends Modal {
 	private salary = "";
 	private jobUrl = "";
 	private source = "";
+	private applicationType = "";
 	private followUpDate = "";
 	private notes = "";
 	private recruiterName = "";
@@ -165,6 +166,21 @@ export class NewApplicationModal extends Modal {
 				this.source = this.plugin.settings.defaultSourceOptions[0];
 				dropdown.onChange((value) => {
 					this.source = value;
+				});
+			});
+
+		// Application Type
+		new Setting(contentEl)
+			.setName("Application Type")
+			.setDesc("How did you apply  to this role?")
+			.addDropdown((dropdown) => {
+				for (const src of this.plugin.settings.defaultApplicationTypes) {
+					dropdown.addOption(src, src);
+				}
+				dropdown.setValue(this.applicationType || this.plugin.settings.defaultApplicationTypes[0]);
+				this.applicationType = this.plugin.settings.defaultApplicationTypes[0];
+				dropdown.onChange((value) => {
+					this.applicationType = value;
 				});
 			});
 
@@ -335,6 +351,7 @@ export class NewApplicationModal extends Modal {
 				salary: this.salary.trim(),
 				jobUrl: this.jobUrl.trim(),
 				source: this.source.trim(),
+				applicationType: this.applicationType.trim(),
 				followUpDate: this.followUpDate.trim() || undefined,
 				notes: this.notes.trim(),
 				jobDescription: jobDescriptionText.trim() || undefined,

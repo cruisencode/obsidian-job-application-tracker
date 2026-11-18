@@ -986,12 +986,14 @@
 .job-tracker-progress-fill.status-withdrawn { background-color: var(--job-status-withdrawn); }
 .job-tracker-progress-fill.status-ghosted { background-color: var(--job-status-ghosted); }
 
-/* Source Table */
-.job-tracker-source-table th {
+/* Source & Application Type Tables */
+.job-tracker-source-table th,
+.job-tracker-application-type-table th {
 	font-size: 0.8em;
 }
 
-.job-tracker-source-table td {
+.job-tracker-source-table td,
+.job-tracker-application-type-table td {
 	font-size: 0.82em;
 }
 
