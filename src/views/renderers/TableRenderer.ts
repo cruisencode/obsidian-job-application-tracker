@@ -41,6 +41,7 @@ export class TableRenderer {
 			{ label: "Location", field: "location" },
 			{ label: "Salary", field: "salary" },
 			{ label: "Source", field: "source" },
+			{ label: "Application Type", field: "applicationType" },
 		];
 
 		for (const col of columns) {
@@ -139,6 +140,9 @@ export class TableRenderer {
 
 			// Source
 			tr.createEl("td", { text: app.source || "-" });
+
+			// Application Type
+			tr.createEl("td", { text: app.applicationType || "-" });
 
 			// Contacts
 			const tdContacts = tr.createEl("td");
