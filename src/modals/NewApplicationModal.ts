@@ -351,6 +351,7 @@ export class NewApplicationModal extends Modal {
 				salary: this.salary.trim(),
 				jobUrl: this.jobUrl.trim(),
 				source: this.source.trim(),
+				applicationType: this.applicationType.trim(),
 				followUpDate: this.followUpDate.trim() || undefined,
 				notes: this.notes.trim(),
 				jobDescription: jobDescriptionText.trim() || undefined,
